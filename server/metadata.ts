@@ -50,11 +50,11 @@ async function extractCoupangMetadata(url: string) {
     } catch (fetchError) {
     }
     
-    // 모든 시도가 실패하면 null 반환 (하드코딩 없음)
+    // 모든 시도가 실패해도 기본 정보는 제공
     return { 
-      title: null, 
-      description: null, 
-      image: imageUrl, // 이미지만 CDN URL 사용 (공개 리소스)
+      title: `쿠팡 상품 ${productId}`, 
+      description: '쿠팡에서 판매하는 상품입니다', 
+      image: imageUrl, // 이미지 CDN URL 사용
       price: null 
     };
     
