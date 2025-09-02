@@ -107,12 +107,12 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, cl
             </div>
           </div>
           
-          {(displayPrice || priceLoading) && (
+          {displayPrice && (
             <div 
               className="text-lg font-bold text-primary mb-2" 
               data-testid={`text-price-${link.id}`}
             >
-              {priceLoading ? "가격 확인중..." : displayPrice}
+              {displayPrice}
             </div>
           )}
           
