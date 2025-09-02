@@ -85,7 +85,11 @@ export class MemStorage implements IStorage {
   async createLink(insertLink: InsertLink): Promise<Link> {
     const id = randomUUID();
     const link: Link = {
-      ...insertLink,
+      url: insertLink.url,
+      title: insertLink.title ?? null,
+      description: insertLink.description ?? null,
+      image: insertLink.image ?? null,
+      domain: insertLink.domain ?? null,
       id,
       createdAt: new Date(),
     };
