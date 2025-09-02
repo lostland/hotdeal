@@ -1,0 +1,117 @@
+import { Link } from "@shared/schema";
+import { ExternalLink, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+interface LinkCardProps {
+  link: Link;
+  onClick: () => void;
+  onDelete: () => void;
+  className?: string;
+}
+
+export function LinkCard({ link, onClick, onDelete, className, ...props }: LinkCardProps) {
+  const getDomainIcon = (domain: string) => {
+    if (domain.includes('naver')) {
+      return <div className="w-4 h-4 bg-green-500 rounded-sm flex items-center justify-center">
+        <span className="text-white text-xs font-bold">N</span>
+      </div>;
+    }
+    if (domain.includes('kakao')) {
+      return <div className="w-4 h-4 bg-yellow-400 rounded-sm flex items-center justify-center">
+        <span className="text-black text-xs font-bold">K</span>
+      </div>;
+    }
+    if (domain.includes('gmarket')) {
+      return <div className="w-4 h-4 bg-red-500 rounded-sm flex items-center justify-center">
+        <span className="text-white text-xs font-bold">G</span>
+      </div>;
+    }
+    return <div className="w-4 h-4 bg-blue-500 rounded-sm flex items-center justify-center">
+      <ExternalLink className="w-2 h-2 text-white" />
+    </div>;
+  };
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    onClick();
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onDelete();
+  };
+
+  return (
+    <article 
+      className={cn(
+        "link-card bg-card rounded-lg shadow-sm border border-border mb-4 overflow-hidden transition-all duration-200 hover:shadow-md hover:-translate-y-1 active:scale-98 cursor-pointer",
+        className
+      )}
+      {...props}
+    >
+      <div onClick={handleCardClick} className="block">
+        <div className="aspect-video overflow-hidden relative">
+          {link.image ? (
+            <img 
+              src={link.image} 
+              alt={link.title || "Website preview"} 
+              className="w-full h-full object-cover transition-transform duration-200 hover:scale-105"
+              loading="lazy"
+              data-testid={`img-thumbnail-${link.id}`}
+            />
+          ) : (
+            <div className="w-full h-full bg-muted flex items-center justify-center" data-testid={`placeholder-${link.id}`}>
+              <ExternalLink className="w-8 h-8 text-muted-foreground" />
+            </div>
+          )}
+          
+          {/* Delete button overlay */}
+          <Button
+            size="icon"
+            variant="destructive"
+            className="absolute top-2 right-2 w-8 h-8 rounded-full opacity-80 hover:opacity-100"
+            onClick={handleDeleteClick}
+            data-testid={`button-delete-${link.id}`}
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+        
+        <div className="p-4">
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <h3 
+              className="text-base font-medium text-foreground line-clamp-2 leading-tight flex-1" 
+              data-testid={`text-title-${link.id}`}
+            >
+              {link.title || "제목 없음"}
+            </h3>
+            <div className="flex-shrink-0 w-5 h-5 text-primary">
+              <ExternalLink className="w-4 h-4" />
+            </div>
+          </div>
+          
+          {link.description && (
+            <p 
+              className="text-sm text-muted-foreground mb-3 line-clamp-2" 
+              data-testid={`text-description-${link.id}`}
+            >
+              {link.description}
+            </p>
+          )}
+          
+          <div className="flex items-center gap-2">
+            {getDomainIcon(link.domain || "")}
+            <span 
+              className="text-xs text-muted-foreground font-medium truncate" 
+              data-testid={`text-domain-${link.id}`}
+            >
+              {link.domain}
+            </span>
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}
