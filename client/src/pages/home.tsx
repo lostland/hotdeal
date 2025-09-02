@@ -54,7 +54,7 @@ export default function Home() {
   };
 
   const handleAdminClick = () => {
-    window.open('/admin.html', '_blank');
+    window.open('/admin', '_blank');
   };
 
   if (error) {
