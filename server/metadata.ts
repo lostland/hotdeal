@@ -189,10 +189,36 @@ export async function fetchMetadata(url: string) {
       $('link[rel="icon"]').attr('href') ||
       null;
 
-    // Extract price information with enhanced G마켓 specific selectors
+    // Update domain if we have a different finalUrl after redirect
+    let finalDomain = domain;
+    if (finalUrl !== url) {
+      try {
+        const finalUrlObj = new URL(finalUrl);
+        finalDomain = finalUrlObj.hostname;
+      } catch {
+        // Keep original domain if parsing fails
+        finalDomain = domain;
+      }
+    }
+
+    // Extract price information with site-specific selectors
     let price = 
       $('meta[property="product:price:amount"]').attr('content') ||
       $('meta[property="product:price"]').attr('content') ||
+      // 11번가 specific price selectors
+      (finalDomain.includes('11st.co.kr') ? (
+        $('.sale_price .value').first().text().trim() ||
+        $('.sale_price').first().text().trim() ||
+        $('.price_innfo .sale_price').first().text().trim() ||
+        $('.total_price .price').first().text().trim() ||
+        $('.c_prd_price .sale').first().text().trim() ||
+        $('.prd_price_info .sale_price').first().text().trim() ||
+        $('.price_area .sale_price').first().text().trim() ||
+        $('.prd_price .price_sale').first().text().trim() ||
+        $('.sellprice').first().text().trim() ||
+        $('[data-log-actionid-label="price"]').first().text().trim() ||
+        null
+      ) : null) ||
       // G마켓 specific price selectors (more comprehensive)
       $('.item_price .price_innerwrap .price_real .price').first().text().trim() ||
       $('.item_price .discount_price').first().text().trim() ||
@@ -226,18 +252,6 @@ export async function fetchMetadata(url: string) {
       $('.current-price').first().text().trim() ||
       $('[class*="price"]').first().text().trim() ||
       null;
-
-    // Update domain if we have a different finalUrl after redirect
-    let finalDomain = domain;
-    if (finalUrl !== url) {
-      try {
-        const finalUrlObj = new URL(finalUrl);
-        finalDomain = finalUrlObj.hostname;
-      } catch {
-        // Keep original domain if parsing fails
-        finalDomain = domain;
-      }
-    }
 
     // If we don't have productCode yet, try to extract it
     if (!productCode && finalUrl.includes('gmarket.co.kr') && finalUrl.includes('goodscode=')) {
@@ -301,9 +315,35 @@ export async function fetchMetadata(url: string) {
       }
     }
 
+    // Clean and validate price data
+    if (price && price.trim && price.trim()) {
+      // Filter out invalid price data (like inventory counts, etc.)
+      const invalidPricePatterns = [
+        /총\s*\d+\s*개/,  // "총 0개", "총 123개" etc.
+        /^\d+\s*개$/,     // "0개", "123개" etc.
+        /재고/,           // "재고" related text
+        /수량/,           // "수량" related text
+        /품절/,           // "품절" text
+        /^[\s\-\+\=]+$/,  // Only symbols/spaces
+      ];
+      
+      const isInvalidPrice = invalidPricePatterns.some(pattern => pattern.test(price?.trim() || ''));
+      
+      if (isInvalidPrice) {
+        console.log(`잘못된 가격 데이터 필터링: "${price}"`);
+        price = null;
+      } else {
+        // Clean up price formatting
+        price = price.replace(/[^\d,원]/g, '').trim();
+        if (!price.includes('원') && /^\d+[,\d]*$/.test(price)) {
+          price += '원';
+        }
+      }
+    }
+
     // Generate fallback price if none found
     if (!price || !price.trim()) {
-      if (finalDomain.includes('gmarket') || finalDomain.includes('naver') || finalDomain.includes('kakao')) {
+      if (finalDomain.includes('gmarket') || finalDomain.includes('naver') || finalDomain.includes('kakao') || finalDomain.includes('11st')) {
         price = '가격 확인';
       } else {
         price = null;
