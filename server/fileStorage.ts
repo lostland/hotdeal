@@ -23,13 +23,6 @@ export class FileStorage {
   private async initialize() {
     try {
       await fs.mkdir(path.dirname(DATA_FILE), { recursive: true });
-      
-      // 기본 URL 목록 (새로운 설치에만 사용)
-      const defaultUrls = [
-        "https://naver.me/GhbGqQSN",
-        "https://store.kakao.com/bluemingreen/products/243568345?shareLinkUuid=ypAZ9ub0JsfqD08i&ref=SHARE_AF", 
-        "https://link.gmarket.co.kr/etuXJmXxWh"
-      ];
 
       try {
         const data = await fs.readFile(DATA_FILE, 'utf8');
@@ -44,17 +37,15 @@ export class FileStorage {
           }));
         }
         
-        // 기존 파일이 있으면 해당 데이터를 그대로 사용 (generateLinksFromUrls 호출 안함)
         console.log('기존 저장된 데이터를 사용합니다.');
         
       } catch (error) {
-        console.log('저장된 파일이 없어 기본 데이터로 초기화합니다.');
-        // 파일이 없으면 기본 데이터로 초기화
+        console.log('저장된 파일이 없어 빈 데이터로 시작합니다.');
+        // 파일이 없으면 빈 상태로 시작
         this.cache = {
-          urls: defaultUrls,
+          urls: [],
           links: []
         };
-        await this.generateLinksFromUrls();
         await this.saveToFile();
       }
 
@@ -115,27 +106,26 @@ export class FileStorage {
   }
 
   private getFallbackData(url: string, domain: string) {
-    if (url.includes('naver.me/GhbGqQSN') || url.includes('brand.naver.com/bbsusan')) {
+    if (domain.includes('naver')) {
       return {
-        title: '사세 치킨가라아게 500g 순살치킨!',
-        description: '[빈비수산] 순살육(국내산수입) 순살가공, 순살가공 축육식품 전문',
-        image: 'https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450',
-        price: '4,300원',
+        title: '네이버 쇼핑 상품',
+        description: '네이버 쇼핑에서 판매하는 상품입니다.',
+        image: 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450',
+        price: '가격 확인',
         domain: domain
       };
-    } else if (url.includes('store.kakao.com')) {
+    } else if (domain.includes('kakao')) {
       return {
-        title: '블루민그린 프리미엄 스킨케어 세트',
-        description: '자연 성분으로 만든 친환경 스킨케어 제품으로 건강한 피부를 위한 선택입니다.',
-        image: 'https://images.unsplash.com/photo-1596755389378-c31d21fd1273?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450',
-        price: '29,900원',
+        title: '카카오 쇼핑 상품',
+        description: '카카오 쇼핑에서 판매하는 상품입니다.',
+        image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450',
+        price: '가격 확인',
         domain: domain
       };
-    } else if (url.includes('gmarket.co.kr')) {
-      // 모든 gmarket 링크에 대해 동일한 fallback 처리
+    } else if (domain.includes('gmarket')) {
       return {
         title: 'G마켓 상품',
-        description: 'G마켓에서 판매중인 다양한 상품을 만나보세요. 최저가 보장과 빠른 배송으로 편리한 쇼핑 경험을 제공합니다.',
+        description: 'G마켓에서 판매하는 상품입니다.',
         image: 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450',
         price: '가격 확인',
         domain: domain
@@ -165,9 +155,56 @@ export class FileStorage {
       await this.initPromise;
       this.initPromise = null;
     }
-    return this.cache?.links.sort((a, b) => 
+    
+    if (!this.cache) return [];
+    
+    // 모든 URL에 대해 최신 메타데이터를 가져와서 업데이트
+    const updatedLinks: Link[] = [];
+    
+    for (const url of this.cache.urls) {
+      try {
+        const metadata = await fetchMetadata(url);
+        const existingLink = this.cache.links.find(link => link.url === url);
+        const link: Link = {
+          id: existingLink?.id || randomUUID(),
+          url,
+          title: metadata.title,
+          description: metadata.description,
+          image: metadata.image,
+          domain: metadata.domain,
+          price: metadata.price,
+          createdAt: existingLink?.createdAt || new Date()
+        };
+        updatedLinks.push(link);
+      } catch (error) {
+        console.error(`Failed to update metadata for ${url}:`, error);
+        // 메타데이터 가져오기 실패시 기존 링크 데이터 사용 또는 fallback
+        const existingLink = this.cache.links.find(link => link.url === url);
+        if (existingLink) {
+          updatedLinks.push(existingLink);
+        } else {
+          // fallback 데이터 생성
+          const urlObj = new URL(url);
+          const domain = urlObj.hostname;
+          const fallbackData = this.getFallbackData(url, domain);
+          const link: Link = {
+            id: randomUUID(),
+            url,
+            ...fallbackData,
+            createdAt: new Date()
+          };
+          updatedLinks.push(link);
+        }
+      }
+    }
+    
+    // 캐시 업데이트 및 파일 저장
+    this.cache.links = updatedLinks;
+    await this.saveToFile();
+    
+    return updatedLinks.sort((a, b) => 
       new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
-    ) || [];
+    );
   }
 
   async addUrl(url: string): Promise<Link> {

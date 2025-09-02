@@ -135,20 +135,11 @@ export async function fetchMetadata(url: string) {
     // Generate better fallback title if none found
     if (!title.trim()) {
       if (domain.includes('naver')) {
-        if (url.includes('naver.me/GhbGqQSN') || url.includes('brand.naver.com/bbsusan')) {
-          title = '사세 치킨가라아게 500g 순살치킨!';
-        } else {
-          title = '네이버 상품';
-        }
+        title = '네이버 쇼핑 상품';
       } else if (domain.includes('kakao')) {
-        title = '카카오 상품';
+        title = '카카오 쇼핑 상품';
       } else if (domain.includes('gmarket')) {
-        // Special case for the specific link we know about
-        if (url.includes('etuXJmXxWh') || productCode === '4517012388') {
-          title = '달콤한 허니듀 멜론 대과 1.8kg 2과';
-        } else {
-          title = 'G마켓 상품';
-        }
+        title = 'G마켓 상품';
       } else {
         title = `${domain} 페이지`;
       }
@@ -157,20 +148,11 @@ export async function fetchMetadata(url: string) {
     // Generate better fallback description
     if (!description.trim()) {
       if (domain.includes('naver')) {
-        if (url.includes('naver.me/GhbGqQSN') || url.includes('brand.naver.com/bbsusan')) {
-          description = '[빈비수산] 순살육(국내산수입) 순살가공, 순살가공 축육식품 전문';
-        } else {
-          description = '네이버에서 판매하는 상품입니다.';
-        }
+        description = '네이버 쇼핑에서 판매하는 상품입니다.';
       } else if (domain.includes('kakao')) {
-        description = '카카오에서 판매하는 상품입니다.';
+        description = '카카오 쇼핑에서 판매하는 상품입니다.';
       } else if (domain.includes('gmarket')) {
-        // Special case for the specific link we know about
-        if (url.includes('etuXJmXxWh') || productCode === '4517012388') {
-          description = '(한정수량)(신선집중) 달콤하고 신선한 허니듀 멜론을 만나보세요. 대과 사이즈 1.8kg 2과로 구성되어 있습니다.';
-        } else {
-          description = 'G마켓에서 판매하는 상품입니다.';
-        }
+        description = 'G마켓에서 판매하는 상품입니다.';
       } else {
         description = `${domain}의 페이지입니다.`;
       }
@@ -179,19 +161,12 @@ export async function fetchMetadata(url: string) {
     // Use a default placeholder image for Korean shopping sites if no image found
     if (!image) {
       if (domain.includes('naver')) {
-        if (url.includes('naver.me/GhbGqQSN') || url.includes('brand.naver.com/bbsusan')) {
-          image = 'https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450';
-        } else {
-          image = 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450';
-        }
+        image = 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450';
       } else if (domain.includes('kakao')) {
         image = 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450';
       } else if (domain.includes('gmarket')) {
-        // Special case for the specific link we know about - try to use actual product image
-        if (url.includes('etuXJmXxWh') || productCode === '4517012388') {
-          image = 'https://gdimg.gmarket.co.kr/4517012388/still/300';
-        } else if (productCode) {
-          // Try to construct product image URL for other G마켓 products
+        if (productCode) {
+          // Try to construct product image URL for G마켓 products
           image = `https://gdimg.gmarket.co.kr/${productCode}/still/300`;
         } else {
           image = 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450';
@@ -212,23 +187,7 @@ export async function fetchMetadata(url: string) {
 
     // Generate fallback price if none found
     if (!price || !price.trim()) {
-      if (domain.includes('gmarket')) {
-        if (url.includes('etuXJmXxWh') || productCode === '4517012388') {
-          price = '19,800원';
-        } else if (productCode === '4419692231') {
-          price = '25,900원';
-        } else if (productCode === '4070164350') {
-          price = '12,900원';
-        } else {
-          price = '가격 확인';
-        }
-      } else if (domain.includes('naver')) {
-        if (url.includes('naver.me/GhbGqQSN') || url.includes('brand.naver.com/bbsusan')) {
-          price = '4,300원';
-        } else {
-          price = '가격 확인';
-        }
-      } else if (domain.includes('kakao')) {
+      if (domain.includes('gmarket') || domain.includes('naver') || domain.includes('kakao')) {
         price = '가격 확인';
       } else {
         price = null;
@@ -255,66 +214,32 @@ export async function fetchMetadata(url: string) {
     let fallbackPrice = null;
     
     if (domain.includes('naver')) {
-      if (url.includes('naver.me/GhbGqQSN') || url.includes('brand.naver.com/bbsusan')) {
-        fallbackTitle = '사세 치킨가라아게 500g 순살치킨!';
-        fallbackDescription = '[빈비수산] 순살육(국내산수입) 순살가공, 순살가공 축육식품 전문';
-        fallbackImage = 'https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450';
-        fallbackPrice = '4,300원';
-      } else {
-        fallbackTitle = '네이버 상품';
-        fallbackDescription = '네이버에서 판매하는 상품입니다.';
-        fallbackImage = 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450';
-        fallbackPrice = '가격 확인';
-      }
+      fallbackTitle = '네이버 쇼핑 상품';
+      fallbackDescription = '네이버 쇼핑에서 판매하는 상품입니다.';
+      fallbackImage = 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450';
+      fallbackPrice = '가격 확인';
     } else if (domain.includes('kakao')) {
-      fallbackTitle = '카카오 상품';
-      fallbackDescription = '카카오에서 판매하는 상품입니다.';
+      fallbackTitle = '카카오 쇼핑 상품';
+      fallbackDescription = '카카오 쇼핑에서 판매하는 상품입니다.';
       fallbackImage = 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450';
       fallbackPrice = '가격 확인';
     } else if (domain.includes('gmarket')) {
-      // Extract product code from URL for better fallback
+      fallbackTitle = 'G마켓 상품';
+      fallbackDescription = 'G마켓에서 판매하는 상품입니다.';
+      
+      // Try to extract product code for image URL
       let fallbackProductCode = null;
       if (url.includes('goodscode=')) {
         const match = url.match(/goodscode=(\d+)/);
         if (match) fallbackProductCode = match[1];
       }
       
-      // If no direct product code, try to infer from known redirect patterns
-      if (!fallbackProductCode && url.includes('link.gmarket.co.kr')) {
-        if (url.includes('AtASUB2Nog') || url.includes('gtASUB2Nog')) {
-          fallbackProductCode = '4419692231';
-        }
-      }
-      
-      // Generate product-specific fallback based on known patterns
-      if (url.includes('etuXJmXxWh') || fallbackProductCode === '4517012388') {
-        fallbackTitle = '달콤한 허니듀 멜론 대과 1.8kg 2과';
-        fallbackDescription = '(한정수량)(신선집중) 달콤하고 신선한 허니듀 멜론을 만나보세요. 대과 사이즈 1.8kg 2과로 구성되어 있습니다.';
-        fallbackImage = 'https://gdimg.gmarket.co.kr/4517012388/still/300';
-        fallbackPrice = '19,800원';
-      } else if (fallbackProductCode === '4419692231') {
-        fallbackTitle = 'G마켓 인기 상품';
-        fallbackDescription = 'G마켓에서 판매중인 인기 상품입니다. 할인가격과 빠른배송으로 만나보세요.';
+      if (fallbackProductCode) {
         fallbackImage = `https://gdimg.gmarket.co.kr/${fallbackProductCode}/still/300`;
-        fallbackPrice = '25,900원';
-      } else if (fallbackProductCode === '4070164350') {
-        fallbackTitle = 'G마켓 상품';
-        fallbackDescription = 'G마켓에서 판매중인 상품입니다. 상세 정보는 링크를 확인하세요.';
-        fallbackImage = `https://gdimg.gmarket.co.kr/${fallbackProductCode}/still/300`;
-        fallbackPrice = '12,900원';
-      } else if (fallbackProductCode) {
-        // Generic product with actual product code
-        fallbackTitle = 'G마켓 상품';
-        fallbackDescription = 'G마켓에서 판매중인 상품입니다. 상세 정보는 링크를 확인하세요.';
-        fallbackImage = `https://gdimg.gmarket.co.kr/${fallbackProductCode}/still/300`;
-        fallbackPrice = '가격 확인';
       } else {
-        // No product code available
-        fallbackTitle = 'G마켓 상품';
-        fallbackDescription = 'G마켓에서 판매하는 상품입니다.';
         fallbackImage = 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450';
-        fallbackPrice = '가격 확인';
       }
+      fallbackPrice = '가격 확인';
     } else {
       fallbackTitle = `${domain} 페이지`;
       fallbackDescription = `${domain}의 페이지입니다.`;
