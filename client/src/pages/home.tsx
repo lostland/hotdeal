@@ -6,7 +6,8 @@ import { AppHeader } from "@/components/app-header";
 import { LinkCard } from "@/components/link-card";
 import { LoadingCard } from "@/components/loading-card";
 import { ErrorCard } from "@/components/error-card";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Settings } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function Home() {
   const { data: links = [], isLoading, error, refetch } = useQuery<Link[]>({
@@ -50,6 +51,10 @@ export default function Home() {
 
   const handleRetryLoad = () => {
     refetch();
+  };
+
+  const handleAdminClick = () => {
+    window.open('/admin.html', '_blank');
   };
 
   if (error) {
@@ -101,6 +106,17 @@ export default function Home() {
           )}
         </div>
       </main>
+
+      {/* Admin Settings Button */}
+      <Button
+        size="icon"
+        variant="ghost"
+        className="fixed bottom-6 right-6 z-40 w-10 h-10 rounded-full opacity-30 hover:opacity-60 transition-opacity duration-200 bg-background/80 backdrop-blur-sm border border-border/40"
+        onClick={handleAdminClick}
+        data-testid="button-admin-settings"
+      >
+        <Settings className="w-4 h-4 text-muted-foreground" />
+      </Button>
     </div>
   );
 }
