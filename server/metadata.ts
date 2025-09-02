@@ -1,5 +1,83 @@
 import * as cheerio from "cheerio";
 
+// 쿠팡 전용 메타데이터 추출 함수
+async function extractCoupangMetadata(url: string) {
+  console.log(`쿠팡 전용 메타데이터 추출: ${url}`);
+  
+  try {
+    // 쿠팡용 특화된 User-Agent와 헤더
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'ko-KR,ko;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Referer': 'https://www.google.com/',
+      },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(10000)
+    });
+
+    if (!response.ok) {
+      console.log(`쿠팡 HTTP 오류: ${response.status}`);
+      return { title: null, description: null, image: null, price: null };
+    }
+
+    const html = await response.text();
+    const $ = cheerio.load(html);
+    
+    console.log(`쿠팡 HTML 길이: ${html.length} characters`);
+    
+    // 쿠팡 상품 제목 추출 (다양한 셀렉터 시도)
+    let title = 
+      $('h1.prod-buy-header__title').text().trim() ||
+      $('h1[data-testid="product-title"]').text().trim() ||
+      $('h1').text().trim() ||
+      $('title').text().replace('쿠팡!', '').trim() ||
+      null;
+      
+    // 쿠팡 상품 설명 추출
+    let description = 
+      $('meta[property="og:description"]').attr('content') ||
+      $('meta[name="description"]').attr('content') ||
+      $('.prod-description').text().trim().substring(0, 200) ||
+      null;
+      
+    // 쿠팡 이미지 추출
+    let image = 
+      $('meta[property="og:image"]').attr('content') ||
+      $('.prod-image img').first().attr('src') ||
+      $('img[data-testid="product-image"]').first().attr('src') ||
+      null;
+      
+    // 쿠팡 가격 추출 (다양한 셀렉터 시도)
+    let price = 
+      $('.total-price .price').text().trim() ||
+      $('.price-value').text().trim() ||
+      $('.prod-price .price').text().trim() ||
+      null;
+    
+    // HTML에서 직접 텍스트 검색으로 정보 추출
+    if (!title) {
+      const titleMatch = html.match(/<h1[^>]*>([^<]+)<\/h1>/i);
+      if (titleMatch) title = titleMatch[1].trim();
+    }
+    
+    console.log(`쿠팡 파싱 결과 - 제목: ${title}, 설명: ${description?.substring(0, 50)}, 이미지: ${image}, 가격: ${price}`);
+    
+    return {
+      title,
+      description, 
+      image,
+      price
+    };
+    
+  } catch (error) {
+    console.log('쿠팡 메타데이터 추출 실패:', error instanceof Error ? error.message : String(error));
+    return { title: null, description: null, image: null, price: null };
+  }
+}
+
 export async function fetchMetadata(url: string) {
   try {
     // Get final URL after redirects for better processing
@@ -10,24 +88,38 @@ export async function fetchMetadata(url: string) {
     const urlObj = new URL(url);
     const domain = urlObj.hostname;
     
-    // 쿠팡 redirect URL을 실제 URL로 변환
-    if (url.includes('link.coupang.com')) {
-      try {
-        console.log(`쿠팡 리디렉트 URL 처리: ${url}`);
-        const redirectResponse = await fetch(url, {
-          method: 'HEAD',
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          },
-          redirect: 'follow'
-        });
-        
-        if (redirectResponse.url && redirectResponse.url !== url) {
-          finalUrl = redirectResponse.url;
-          console.log(`쿠팡 리디렉트: ${url} -> ${finalUrl}`);
+    // 쿠팡 URL 감지 및 전용 처리
+    if (url.includes('link.coupang.com') || domain.includes('coupang.com')) {
+      console.log(`쿠팡 URL 감지, 전용 파싱 함수 호출: ${url}`);
+      
+      // 쿠팡 리디렉트 URL을 실제 URL로 변환
+      if (url.includes('link.coupang.com')) {
+        try {
+          console.log(`쿠팡 리디렉트 URL 처리: ${url}`);
+          const redirectResponse = await fetch(url, {
+            method: 'HEAD',
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            },
+            redirect: 'follow'
+          });
+          
+          if (redirectResponse.url && redirectResponse.url !== url) {
+            finalUrl = redirectResponse.url;
+            console.log(`쿠팡 리디렉트: ${url} -> ${finalUrl}`);
+          }
+        } catch (redirectError) {
+          console.log('쿠팡 리디렉트 실패:', redirectError instanceof Error ? redirectError.message : String(redirectError));
         }
-      } catch (redirectError) {
-        console.log('쿠팡 리디렉트 실패:', redirectError instanceof Error ? redirectError.message : String(redirectError));
+      }
+      
+      // 쿠팡 전용 메타데이터 추출 함수 호출
+      const coupangResult = await extractCoupangMetadata(finalUrl);
+      if (coupangResult.title || coupangResult.description || coupangResult.image) {
+        console.log(`쿠팡 전용 파싱 성공: ${coupangResult.title}`);
+        return coupangResult;
+      } else {
+        console.log(`쿠팡 전용 파싱 실패, 일반 로직으로 fallback`);
       }
     }
     
