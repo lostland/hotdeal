@@ -136,7 +136,7 @@ export async function fetchMetadata(url: string) {
               }).find(p => p) ||
               null;
             
-            if (mobilePrice && mobilePrice !== '가격 확인') {
+            if (mobilePrice) {
               console.log(`모바일에서 가격 추출 성공: ${mobilePrice}`);
               return {
                 title: 'G마켓 상품',
@@ -155,7 +155,7 @@ export async function fetchMetadata(url: string) {
           title: 'G마켓 상품',
           description: 'G마켓에서 판매하는 상품입니다.',
           image: `https://gdimg.gmarket.co.kr/${productCode}/still/300`,
-          price: null, // 가격 확인 메시지 제거
+          price: null,
           domain: domain.includes('gmarket') ? domain : 'item.gmarket.co.kr'
         };
       }
@@ -433,17 +433,17 @@ export async function fetchMetadata(url: string) {
       } else {
         fallbackImage = 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450';
       }
-      fallbackPrice = '가격 확인';
+      fallbackPrice = null;
     } else if (domain.includes('naver')) {
       fallbackTitle = '네이버 쇼핑 상품';
       fallbackDescription = '네이버 쇼핑에서 판매하는 상품입니다.';
       fallbackImage = 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450';
-      fallbackPrice = '가격 확인';
+      fallbackPrice = null;
     } else if (domain.includes('kakao')) {
       fallbackTitle = '카카오 쇼핑 상품';
       fallbackDescription = '카카오 쇼핑에서 판매하는 상품입니다.';
       fallbackImage = 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450';
-      fallbackPrice = '가격 확인';
+      fallbackPrice = null;
     } else {
       fallbackTitle = `${domain} 페이지`;
       fallbackDescription = `${domain}의 페이지입니다.`;
