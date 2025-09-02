@@ -6,11 +6,12 @@ import { cn } from "@/lib/utils";
 interface LinkCardProps {
   link: Link;
   onClick: () => void;
-  onDelete: () => void;
+  onDelete?: () => void;
+  hideDeleteButton?: boolean;
   className?: string;
 }
 
-export function LinkCard({ link, onClick, onDelete, className, ...props }: LinkCardProps) {
+export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, className, ...props }: LinkCardProps) {
   const getDomainIcon = (domain: string) => {
     if (domain.includes('naver')) {
       return <div className="w-4 h-4 bg-green-500 rounded-sm flex items-center justify-center">
@@ -40,7 +41,9 @@ export function LinkCard({ link, onClick, onDelete, className, ...props }: LinkC
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    onDelete();
+    if (onDelete) {
+      onDelete();
+    }
   };
 
   return (
@@ -68,15 +71,17 @@ export function LinkCard({ link, onClick, onDelete, className, ...props }: LinkC
           )}
           
           {/* Delete button overlay */}
-          <Button
-            size="icon"
-            variant="destructive"
-            className="absolute top-2 right-2 w-8 h-8 rounded-full opacity-80 hover:opacity-100"
-            onClick={handleDeleteClick}
-            data-testid={`button-delete-${link.id}`}
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
+          {!hideDeleteButton && (
+            <Button
+              size="icon"
+              variant="destructive"
+              className="absolute top-2 right-2 w-8 h-8 rounded-full opacity-80 hover:opacity-100"
+              onClick={handleDeleteClick}
+              data-testid={`button-delete-${link.id}`}
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          )}
         </div>
         
         <div className="p-4">

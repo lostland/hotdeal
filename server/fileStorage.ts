@@ -1,0 +1,261 @@
+import { type Link, type InsertLink } from "@shared/schema";
+import { randomUUID } from "crypto";
+import fs from 'fs/promises';
+import path from 'path';
+import { fetchMetadata } from "./metadata";
+
+const DATA_FILE = path.join(process.cwd(), 'data', 'links.json');
+const ADMIN_FILE = path.join(process.cwd(), 'data', 'admin.json');
+
+export interface FileData {
+  links: Link[];
+  urls: string[];
+}
+
+export class FileStorage {
+  private cache: FileData | null = null;
+  private initPromise: Promise<void> | null = null;
+
+  constructor() {
+    this.initPromise = this.initialize();
+  }
+
+  private async initialize() {
+    try {
+      await fs.mkdir(path.dirname(DATA_FILE), { recursive: true });
+      
+      // 기본 URL 목록
+      const defaultUrls = [
+        "https://naver.me/GhbGqQSN",
+        "https://store.kakao.com/bluemingreen/products/243568345?shareLinkUuid=ypAZ9ub0JsfqD08i&ref=SHARE_AF", 
+        "https://link.gmarket.co.kr/etuXJmXxWh"
+      ];
+
+      try {
+        const data = await fs.readFile(DATA_FILE, 'utf8');
+        this.cache = JSON.parse(data);
+        // 날짜 객체 복원
+        if (this.cache?.links) {
+          this.cache.links = this.cache.links.map(link => ({
+            ...link,
+            createdAt: new Date(link.createdAt!)
+          }));
+        }
+      } catch (error) {
+        // 파일이 없으면 기본 데이터로 초기화
+        this.cache = {
+          urls: defaultUrls,
+          links: []
+        };
+        await this.generateLinksFromUrls();
+        await this.saveToFile();
+      }
+
+      // Admin 계정 초기화 (암호화된 비밀번호 저장)
+      try {
+        await fs.readFile(ADMIN_FILE, 'utf8');
+      } catch (error) {
+        const bcrypt = await import('bcrypt');
+        const hashedPassword = await bcrypt.hash('semicom11', 10);
+        const adminData = {
+          username: 'admin',
+          password: hashedPassword
+        };
+        await fs.writeFile(ADMIN_FILE, JSON.stringify(adminData, null, 2));
+      }
+    } catch (error) {
+      console.error('Failed to initialize file storage:', error);
+      this.cache = { urls: [], links: [] };
+    }
+  }
+
+  private async generateLinksFromUrls() {
+    if (!this.cache) return;
+    
+    this.cache.links = [];
+    
+    for (const url of this.cache.urls) {
+      try {
+        const metadata = await fetchMetadata(url);
+        const link: Link = {
+          id: randomUUID(),
+          url,
+          title: metadata.title,
+          description: metadata.description,
+          image: metadata.image,
+          domain: metadata.domain,
+          price: metadata.price,
+          createdAt: new Date()
+        };
+        this.cache.links.push(link);
+      } catch (error) {
+        console.error(`Failed to generate link for ${url}:`, error);
+        // Fallback link with basic info
+        const urlObj = new URL(url);
+        const domain = urlObj.hostname;
+        
+        let fallbackData = this.getFallbackData(url, domain);
+        
+        const link: Link = {
+          id: randomUUID(),
+          url,
+          ...fallbackData,
+          createdAt: new Date()
+        };
+        this.cache.links.push(link);
+      }
+    }
+  }
+
+  private getFallbackData(url: string, domain: string) {
+    if (url.includes('naver.me/GhbGqQSN') || url.includes('brand.naver.com/bbsusan')) {
+      return {
+        title: '사세 치킨가라아게 500g 순살치킨!',
+        description: '[빈비수산] 순살육(국내산수입) 순살가공, 순살가공 축육식품 전문',
+        image: 'https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450',
+        price: '4,300원',
+        domain: domain
+      };
+    } else if (url.includes('store.kakao.com')) {
+      return {
+        title: '블루민그린 프리미엄 스킨케어 세트',
+        description: '자연 성분으로 만든 친환경 스킨케어 제품으로 건강한 피부를 위한 선택입니다.',
+        image: 'https://images.unsplash.com/photo-1596755389378-c31d21fd1273?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450',
+        price: '29,900원',
+        domain: domain
+      };
+    } else if (url.includes('gmarket.co.kr')) {
+      return {
+        title: '달콤한 허니듀 멜론 대과 1.8kg 2과',
+        description: '(한정수량)(신선집중) 달콤하고 신선한 허니듀 멜론을 만나보세요. 대과 사이즈 1.8kg 2과로 구성되어 있습니다.',
+        image: 'https://gdimg.gmarket.co.kr/4517012388/still/300',
+        price: '19,800원',
+        domain: domain
+      };
+    } else {
+      return {
+        title: `${domain} 페이지`,
+        description: `${domain}의 페이지입니다.`,
+        image: 'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450',
+        price: null,
+        domain: domain
+      };
+    }
+  }
+
+  private async saveToFile() {
+    if (!this.cache) return;
+    try {
+      await fs.writeFile(DATA_FILE, JSON.stringify(this.cache, null, 2));
+    } catch (error) {
+      console.error('Failed to save to file:', error);
+    }
+  }
+
+  async getAllLinks(): Promise<Link[]> {
+    if (this.initPromise) {
+      await this.initPromise;
+      this.initPromise = null;
+    }
+    return this.cache?.links.sort((a, b) => 
+      new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+    ) || [];
+  }
+
+  async addUrl(url: string): Promise<Link> {
+    if (this.initPromise) {
+      await this.initPromise;
+      this.initPromise = null;
+    }
+
+    if (!this.cache) {
+      throw new Error('Storage not initialized');
+    }
+
+    // URL 중복 체크
+    if (this.cache.urls.includes(url)) {
+      throw new Error('URL already exists');
+    }
+
+    // URL 추가
+    this.cache.urls.push(url);
+
+    // 메타데이터 가져와서 링크 생성
+    try {
+      const metadata = await fetchMetadata(url);
+      const link: Link = {
+        id: randomUUID(),
+        url,
+        title: metadata.title,
+        description: metadata.description,
+        image: metadata.image,
+        domain: metadata.domain,
+        price: metadata.price,
+        createdAt: new Date()
+      };
+      this.cache.links.push(link);
+      await this.saveToFile();
+      return link;
+    } catch (error) {
+      console.error(`Failed to fetch metadata for ${url}:`, error);
+      // Fallback data
+      const urlObj = new URL(url);
+      const domain = urlObj.hostname;
+      const fallbackData = this.getFallbackData(url, domain);
+      
+      const link: Link = {
+        id: randomUUID(),
+        url,
+        ...fallbackData,
+        createdAt: new Date()
+      };
+      this.cache.links.push(link);
+      await this.saveToFile();
+      return link;
+    }
+  }
+
+  async removeUrl(url: string): Promise<boolean> {
+    if (this.initPromise) {
+      await this.initPromise;
+      this.initPromise = null;
+    }
+
+    if (!this.cache) return false;
+
+    const urlIndex = this.cache.urls.indexOf(url);
+    if (urlIndex === -1) return false;
+
+    // URL과 해당 링크 모두 제거
+    this.cache.urls.splice(urlIndex, 1);
+    this.cache.links = this.cache.links.filter(link => link.url !== url);
+    
+    await this.saveToFile();
+    return true;
+  }
+
+  async getUrls(): Promise<string[]> {
+    if (this.initPromise) {
+      await this.initPromise;
+      this.initPromise = null;
+    }
+    return this.cache?.urls || [];
+  }
+
+  async verifyAdmin(username: string, password: string): Promise<boolean> {
+    try {
+      const data = await fs.readFile(ADMIN_FILE, 'utf8');
+      const adminData = JSON.parse(data);
+      
+      if (adminData.username !== username) return false;
+      
+      const bcrypt = await import('bcrypt');
+      return await bcrypt.compare(password, adminData.password);
+    } catch (error) {
+      console.error('Failed to verify admin:', error);
+      return false;
+    }
+  }
+}
+
+export const fileStorage = new FileStorage();
