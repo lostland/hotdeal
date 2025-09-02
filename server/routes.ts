@@ -19,6 +19,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get real-time price for a specific URL
+  app.get("/api/price/:linkId", async (req, res) => {
+    try {
+      const { linkId } = req.params;
+      
+      const links = await fileStorage.getAllLinks();
+      const link = links.find(l => l.id === linkId);
+      
+      if (!link) {
+        return res.status(404).json({ message: "Link not found" });
+      }
+
+      // Fetch fresh metadata to get current price
+      const metadata = await fetchMetadata(link.url);
+      
+      res.json({ 
+        price: metadata.price,
+        linkId: linkId 
+      });
+    } catch (error) {
+      console.error("Error fetching real-time price:", error);
+      res.status(500).json({ message: "Failed to fetch price" });
+    }
+  });
+
   // Admin login
   app.post("/api/admin/login", async (req, res) => {
     try {

@@ -2,6 +2,7 @@ import { Link } from "@shared/schema";
 import { ExternalLink, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
 
 interface LinkCardProps {
   link: Link;
@@ -12,6 +13,15 @@ interface LinkCardProps {
 }
 
 export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, className, ...props }: LinkCardProps) {
+  // Fetch real-time price if link.price is null
+  const { data: priceData, isLoading: priceLoading } = useQuery<{price: string | null; linkId: string}>({
+    queryKey: [`/api/price/${link.id}`],
+    enabled: !link.price, // Only fetch if price is null
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+
+  const displayPrice = link.price || priceData?.price;
   const getDomainIcon = (domain: string) => {
     if (domain.includes('naver')) {
       return <div className="w-4 h-4 bg-green-500 rounded-sm flex items-center justify-center">
@@ -97,12 +107,12 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, cl
             </div>
           </div>
           
-          {link.price && (
+          {(displayPrice || priceLoading) && (
             <div 
               className="text-lg font-bold text-primary mb-2" 
               data-testid={`text-price-${link.id}`}
             >
-              {link.price}
+              {priceLoading ? "가격 확인중..." : displayPrice}
             </div>
           )}
           
