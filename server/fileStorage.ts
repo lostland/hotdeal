@@ -111,7 +111,7 @@ export class FileStorage {
         title: '네이버 쇼핑 상품',
         description: '네이버 쇼핑에서 판매하는 상품입니다.',
         image: 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450',
-        price: '가격 확인',
+        price: null,
         domain: domain
       };
     } else if (domain.includes('kakao')) {
@@ -119,7 +119,7 @@ export class FileStorage {
         title: '카카오 쇼핑 상품',
         description: '카카오 쇼핑에서 판매하는 상품입니다.',
         image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450',
-        price: '가격 확인',
+        price: null,
         domain: domain
       };
     } else if (domain.includes('gmarket')) {
@@ -127,7 +127,7 @@ export class FileStorage {
         title: 'G마켓 상품',
         description: 'G마켓에서 판매하는 상품입니다.',
         image: 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450',
-        price: '가격 확인',
+        price: null,
         domain: domain
       };
     } else {
