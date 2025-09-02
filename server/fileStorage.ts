@@ -125,33 +125,14 @@ export class FileStorage {
         domain: domain
       };
     } else if (url.includes('gmarket.co.kr')) {
-      // 특정 gmarket 링크 별 개별 처리
-      if (url.includes('AtASUB2Nog')) {
-        return {
-          title: '신선한 유기농 양파 3kg',
-          description: 'G마켓에서 판매중인 신선하고 맛있는 유기농 양파입니다. 요리에 꼭 필요한 건강한 재료를 만나보세요.',
-          image: 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450',
-          price: '12,900원',
-          domain: domain
-        };
-      } else if (url.includes('4515736251')) {
-        return {
-          title: '프리미엄 홍삼 스틱 30포',
-          description: 'G마켓에서 판매중인 프리미엄 홍삼 제품입니다. 건강한 하루를 시작하세요.',
-          image: 'https://images.unsplash.com/photo-1584464491033-06628f3a6b7b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450',
-          price: '45,000원',
-          domain: domain
-        };
-      } else {
-        // 기본 gmarket fallback
-        return {
-          title: '달콤한 허니듀 멜론 대과 1.8kg 2과',
-          description: '(한정수량)(신선집중) 달콤하고 신선한 허니듀 멜론을 만나보세요. 대과 사이즈 1.8kg 2과로 구성되어 있습니다.',
-          image: 'https://gdimg.gmarket.co.kr/4517012388/still/300',
-          price: '19,800원',
-          domain: domain
-        };
-      }
+      // 모든 gmarket 링크에 대해 동일한 fallback 처리
+      return {
+        title: 'G마켓 상품',
+        description: 'G마켓에서 판매중인 다양한 상품을 만나보세요. 최저가 보장과 빠른 배송으로 편리한 쇼핑 경험을 제공합니다.',
+        image: 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450',
+        price: '가격 확인',
+        domain: domain
+      };
     } else {
       return {
         title: `${domain} 페이지`,
