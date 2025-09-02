@@ -3,30 +3,17 @@
     "https://www.jnmall.kr/product/8247",
     "https://www.jnmall.kr/product/12811",
     "https://www.11st.co.kr/products/7339388653",
-    "https://link.coupang.com/a/cOl3eU/?style=kakao_existing_ui",
-    "https://www.coupang.com/vp/products/8730464999?itemId=1101451283&vendorItemId=5629539790&src=1191000&spec=10999999&addtag=400&ctag=8730464999&lptag=CFM34599199&itime=20250903024244&pageType=PRODUCT&pageValue=8730464999&wPcid=17568334049684776361739&wRef=&wTime=20250903024244&redirect=landing&mcid=40b666a245a6420a8106fb4ab55fa95e&sharesource=sharebutton&style=kakao_existing_ui&isshortened=Y",
     "https://link.coupang.com/a/cNF69X"
   ],
   "links": [
     {
-      "id": "d976145b-d8e1-4d99-b6b2-82b9ff00f049",
-      "url": "https://www.coupang.com/vp/products/8730464999?itemId=1101451283&vendorItemId=5629539790&src=1191000&spec=10999999&addtag=400&ctag=8730464999&lptag=CFM34599199&itime=20250903024244&pageType=PRODUCT&pageValue=8730464999&wPcid=17568334049684776361739&wRef=&wTime=20250903024244&redirect=landing&mcid=40b666a245a6420a8106fb4ab55fa95e&sharesource=sharebutton&style=kakao_existing_ui&isshortened=Y",
+      "id": "c528371c-813f-43d1-9ef1-d4d1328ec2e5",
+      "url": "https://link.coupang.com/a/cNF69X",
       "title": null,
       "description": null,
-      "image": null,
-      "domain": "www.coupang.com",
+      "image": "https://thumbnail10.coupangcdn.com/thumbnails/remote/492x492ex/image/8803438712/1.jpg",
       "price": null,
-      "createdAt": "2025-09-02T17:43:42.398Z"
-    },
-    {
-      "id": "fc6f62bf-e009-4128-9f2d-ff30efb7a34a",
-      "url": "https://link.coupang.com/a/cOl3eU/?style=kakao_existing_ui",
-      "title": null,
-      "description": null,
-      "image": null,
-      "domain": "link.coupang.com",
-      "price": null,
-      "createdAt": "2025-09-02T17:17:31.750Z"
+      "createdAt": "2025-09-02T17:47:31.302Z"
     },
     {
       "id": "870c064a-ef02-4b56-a770-30ef5b5a6b40",
@@ -59,13 +46,14 @@
       "createdAt": "2025-09-02T17:03:42.138Z"
     },
     {
-      "id": "c528371c-813f-43d1-9ef1-d4d1328ec2e5",
+      "id": "e0ba4c9b-5d9b-46c9-b95d-10d9a6d17d01",
       "url": "https://link.coupang.com/a/cNF69X",
       "title": null,
       "description": null,
-      "image": "https://thumbnail10.coupangcdn.com/thumbnails/remote/492x492ex/image/8803438712/1.jpg",
+      "image": null,
+      "domain": "link.coupang.com",
       "price": null,
-      "createdAt": "2025-09-02T17:47:31.302Z"
+      "createdAt": "2025-09-02T17:50:53.110Z"
     }
   ]
 }

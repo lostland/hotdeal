@@ -1,68 +1,5 @@
 import * as cheerio from "cheerio";
 
-// 쿠팡 전용 메타데이터 추출 함수 - URL 구조 기반 파싱
-async function extractCoupangMetadata(url: string) {
-  
-  try {
-    // URL에서 상품 ID 추출
-    const productMatch = url.match(/products\/(\d+)/);
-    const itemMatch = url.match(/itemId=(\d+)/);
-    
-    if (!productMatch) {
-      console.log('쿠팡 상품 ID를 찾을 수 없습니다');
-      return { title: null, description: null, image: null, price: null };
-    }
-    
-    const productId = productMatch[1];
-    const itemId = itemMatch?.[1];
-    
-    
-    // 쿠팡 CDN에서 직접 이미지 URL 생성 (공개 API)
-    const imageUrl = `https://thumbnail10.coupangcdn.com/thumbnails/remote/492x492ex/image/${productId}/1.jpg`;
-    
-    // 실제 페이지 접근을 통한 최소한의 메타데이터 추출 시도
-    try {
-      const response = await fetch(url, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; facebookexternalhit/1.1; +http://www.facebook.com/externalhit_uatext.php)',
-        },
-        signal: AbortSignal.timeout(3000) // 빠른 타임아웃
-      });
-      
-      if (response.ok) {
-        const html = await response.text();
-        const $ = cheerio.load(html);
-        
-        // 메타태그에서 정보 추출 시도
-        const ogTitle = $('meta[property="og:title"]').attr('content');
-        const metaDesc = $('meta[name="description"]').attr('content');
-        const ogImage = $('meta[property="og:image"]').attr('content');
-        
-        if (ogTitle || metaDesc || ogImage) {
-          return {
-            title: ogTitle || null,
-            description: metaDesc || null,
-            image: ogImage || imageUrl,
-            price: null // 가격은 별도 API에서 처리
-          };
-        }
-      }
-    } catch (fetchError) {
-    }
-    
-    // 모든 시도가 실패하면 null 반환 (하드코딩 없음)
-    return { 
-      title: null, 
-      description: null, 
-      image: null,
-      price: null 
-    };
-    
-  } catch (error) {
-    console.log('쿠팡 URL 파싱 오류:', error instanceof Error ? error.message : String(error));
-    return { title: null, description: null, image: null, price: null };
-  }
-}
 
 export async function fetchMetadata(url: string) {
   try {
@@ -74,40 +11,6 @@ export async function fetchMetadata(url: string) {
     const urlObj = new URL(url);
     const domain = urlObj.hostname;
     
-    // 쿠팡 URL 감지 및 전용 처리
-    if (url.includes('link.coupang.com') || domain.includes('coupang.com')) {
-      console.log(`쿠팡 URL 감지, 전용 파싱 함수 호출: ${url}`);
-      
-      // 쿠팡 리디렉트 URL을 실제 URL로 변환
-      if (url.includes('link.coupang.com')) {
-        try {
-          console.log(`쿠팡 리디렉트 URL 처리: ${url}`);
-          const redirectResponse = await fetch(url, {
-            method: 'HEAD',
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            },
-            redirect: 'follow'
-          });
-          
-          if (redirectResponse.url && redirectResponse.url !== url) {
-            finalUrl = redirectResponse.url;
-            console.log(`쿠팡 리디렉트: ${url} -> ${finalUrl}`);
-          }
-        } catch (redirectError) {
-          console.log('쿠팡 리디렉트 실패:', redirectError instanceof Error ? redirectError.message : String(redirectError));
-        }
-      }
-      
-      // 쿠팡 전용 메타데이터 추출 함수 호출
-      const coupangResult = await extractCoupangMetadata(finalUrl);
-      if (coupangResult.title || coupangResult.description || coupangResult.image) {
-        return coupangResult;
-      } else {
-        // 쿠팡 파싱 완전 실패, 모든 값 null 반환
-        return { title: null, description: null, image: null, price: null };
-      }
-    }
     
     // For G마켓 redirect links, try to get the actual product URL first
     if (url.includes('link.gmarket.co.kr')) {
