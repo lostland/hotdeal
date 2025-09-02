@@ -106,7 +106,7 @@ export async function fetchMetadata(url: string) {
               'Connection': 'keep-alive',
               'Upgrade-Insecure-Requests': '1'
             },
-            signal: AbortSignal.timeout(8000)
+            signal: AbortSignal.timeout(15000)
           });
           
           if (mobileResponse.ok) {
@@ -208,6 +208,49 @@ export async function fetchMetadata(url: string) {
     let price = 
       $('meta[property="product:price:amount"]').attr('content') ||
       $('meta[property="product:price"]').attr('content') ||
+      // 쿠팡 specific price selectors
+      (finalDomain.includes('coupang.com') ? (
+        $('.prod-price .price').first().text().trim() ||
+        $('.prod-price .total-price .price').first().text().trim() ||
+        $('.prod-price .price-value').first().text().trim() ||
+        $('.prod-sale-price .price').first().text().trim() ||
+        $('.prod-buy-header .prod-price .total-price .price').first().text().trim() ||
+        $('.prod-atf .prod-price .total-price .price').first().text().trim() ||
+        $('[data-price]').attr('data-price') + '원' ||
+        $('.price_value').first().text().trim() ||
+        $('.price-value').first().text().trim() ||
+        $('.rocket-checkout-price .price').first().text().trim() ||
+        // JSON-LD에서 가격 정보 추출
+        $('script[type="application/ld+json"]').toArray().map(script => {
+          try {
+            const jsonText = $(script).html() || '{}';
+            const json = JSON.parse(jsonText);
+            
+            // Check for multiple JSON-LD patterns
+            if (Array.isArray(json)) {
+              for (const item of json) {
+                if (item['@type'] === 'Product' && item.offers) {
+                  if (Array.isArray(item.offers)) {
+                    const priceOffer = item.offers.find((o: any) => o.price);
+                    if (priceOffer && priceOffer.price) return priceOffer.price + '원';
+                  } else if (item.offers.price) {
+                    return item.offers.price + '원';
+                  }
+                }
+              }
+            } else if (json['@type'] === 'Product' && json.offers) {
+              if (Array.isArray(json.offers)) {
+                const priceOffer = json.offers.find((o: any) => o.price);
+                if (priceOffer && priceOffer.price) return priceOffer.price + '원';
+              } else if (json.offers.price) {
+                return json.offers.price + '원';
+              }
+            }
+            return null;
+          } catch { return null; }
+        }).find(p => p) ||
+        null
+      ) : null) ||
       // 11번가 specific price selectors (더 구체적으로)
       (finalDomain.includes('11st.co.kr') ? (
         // 가격정보 섹션에서 직접 추출

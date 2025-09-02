@@ -100,7 +100,7 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, cl
               className="text-base font-medium text-foreground line-clamp-2 leading-tight flex-1" 
               data-testid={`text-title-${link.id}`}
             >
-              {link.title || "제목 없음"}
+              {link.title || `${link.domain} 상품`}
             </h3>
             <div className="flex-shrink-0 w-5 h-5 text-primary">
               <ExternalLink className="w-4 h-4" />
