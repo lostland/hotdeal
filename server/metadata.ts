@@ -50,11 +50,11 @@ async function extractCoupangMetadata(url: string) {
     } catch (fetchError) {
     }
     
-    // 모든 시도가 실패해도 기본 정보는 제공
+    // 모든 시도가 실패하면 null 반환 (하드코딩 없음)
     return { 
-      title: `쿠팡 상품 ${productId}`, 
-      description: '쿠팡에서 판매하는 상품입니다', 
-      image: imageUrl, // 이미지 CDN URL 사용
+      title: null, 
+      description: null, 
+      image: null,
       price: null 
     };
     
@@ -102,10 +102,10 @@ export async function fetchMetadata(url: string) {
       // 쿠팡 전용 메타데이터 추출 함수 호출
       const coupangResult = await extractCoupangMetadata(finalUrl);
       if (coupangResult.title || coupangResult.description || coupangResult.image) {
-        console.log(`쿠팡 전용 파싱 성공: ${coupangResult.title}`);
         return coupangResult;
       } else {
-        console.log(`쿠팡 전용 파싱 실패, 일반 로직으로 fallback`);
+        // 쿠팡 파싱 완전 실패, 모든 값 null 반환
+        return { title: null, description: null, image: null, price: null };
       }
     }
     
