@@ -48,14 +48,13 @@
       "createdAt": "2025-09-02T17:03:42.138Z"
     },
     {
-      "id": "6e0208a2-0f93-4aef-b9fb-bac32142b99e",
+      "id": "6714ea44-ff56-47ef-a57d-8bc34d406855",
       "url": "https://www.coupang.com/vp/products/8730464999?itemId=1101451283&vendorItemId=5629539790&src=1191000&spec=10999999&addtag=400&ctag=8730464999&lptag=CFM34599199&itime=20250903021751&pageType=PRODUCT&pageValue=8730464999&wPcid=17568334049684776361739&wRef=&wTime=20250903021751&redirect=landing&mcid=afc25fc443dc4c458f82618ed8e7f2e4&sharesource=sharebutton&style=kakao_existing_ui&isshortened=Y",
-      "title": null,
-      "description": null,
-      "image": null,
-      "domain": "www.coupang.com",
-      "price": "원",
-      "createdAt": "2025-09-02T17:28:13.325Z"
+      "title": "쿠팡 상품 8730464999",
+      "description": "쿠팡에서 판매하는 상품입니다",
+      "image": "https://thumbnail10.coupangcdn.com/thumbnails/remote/492x492ex/image/8730464999/1.jpg",
+      "price": null,
+      "createdAt": "2025-09-02T17:35:09.800Z"
     }
   ]
 }
