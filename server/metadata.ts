@@ -205,8 +205,11 @@ export async function fetchMetadata(url: string) {
     let price = 
       $('meta[property="product:price:amount"]').attr('content') ||
       $('meta[property="product:price"]').attr('content') ||
-      // 11번가 specific price selectors
+      // 11번가 specific price selectors (더 구체적으로)
       (finalDomain.includes('11st.co.kr') ? (
+        // 가격정보 섹션에서 직접 추출
+        $('div:contains("가격정보")').next().text().trim() ||
+        $('.prc_price').first().text().trim() ||
         $('.sale_price .value').first().text().trim() ||
         $('.sale_price').first().text().trim() ||
         $('.price_innfo .sale_price').first().text().trim() ||
@@ -217,6 +220,11 @@ export async function fetchMetadata(url: string) {
         $('.prd_price .price_sale').first().text().trim() ||
         $('.sellprice').first().text().trim() ||
         $('[data-log-actionid-label="price"]').first().text().trim() ||
+        // 더 포괄적인 선택자 (하지만 필터링 강화로 잘못된 데이터는 걸러냄)
+        $('*:contains("원")').filter((i, el) => {
+          const text = $(el).text().trim();
+          return /\d+[,\d]*원/.test(text) && !text.includes('총') && !text.includes('이미지') && !text.includes('리뷰');
+        }).first().text().trim() ||
         null
       ) : null) ||
       // G마켓 specific price selectors (more comprehensive)
@@ -322,12 +330,18 @@ export async function fetchMetadata(url: string) {
     if (price && price.trim && price.trim()) {
       // Filter out invalid price data (like inventory counts, etc.)
       const invalidPricePatterns = [
-        /총\s*\d+\s*개/,  // "총 0개", "총 123개" etc.
-        /^\d+\s*개$/,     // "0개", "123개" etc.
-        /재고/,           // "재고" related text
-        /수량/,           // "수량" related text
-        /품절/,           // "품절" text
-        /^[\s\-\+\=]+$/,  // Only symbols/spaces
+        /총\s*\d+\s*개/,      // "총 0개", "총 123개" etc.
+        /총\s*이미지\s*수/,    // "총 이미지 수" etc.
+        /총\s*리뷰/,          // "총 리뷰" etc.
+        /총\s*\d+/,           // "총 0", "총 100" etc.
+        /^\d+\s*개$/,         // "0개", "123개" etc.
+        /재고/,               // "재고" related text
+        /수량/,               // "수량" related text
+        /품절/,               // "품절" text
+        /이미지\s*수/,        // "이미지 수" 
+        /리뷰\s*보기/,        // "리뷰 보기"
+        /^[\s\-\+\=]+$/,      // Only symbols/spaces
+        /^[가-힣\s]*\d+[가-힣\s]*$/,  // Korean text with numbers but no currency
       ];
       
       const isInvalidPrice = invalidPricePatterns.some(pattern => {
