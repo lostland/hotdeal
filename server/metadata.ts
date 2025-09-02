@@ -325,12 +325,21 @@ export async function fetchMetadata(url: string) {
         console.log(`잘못된 가격 데이터 필터링: "${price}"`);
         price = null;
       } else {
-        // Clean up price formatting
-        const cleanedPrice = price.replace(/[^\d,원]/g, '').trim();
-        console.log(`가격 정리: "${price}" -> "${cleanedPrice}"`);
-        price = cleanedPrice;
-        if (!price.includes('원') && /^\d+[,\d]*$/.test(price)) {
-          price += '원';
+        // jnmall.kr 특별 처리: %가 있으면 바로 뒤의 가격만 추출
+        if (finalDomain.includes('jnmall.kr') && price.includes('%')) {
+          const percentMatch = price.match(/(\d+)%([0-9,]+원)/);
+          if (percentMatch) {
+            price = percentMatch[2]; // % 바로 뒤의 가격만 추출
+            console.log(`jnmall 할인가격 추출: "${percentMatch[0]}" -> "${price}"`);
+          }
+        } else {
+          // Clean up price formatting
+          const cleanedPrice = price.replace(/[^\d,원]/g, '').trim();
+          console.log(`가격 정리: "${price}" -> "${cleanedPrice}"`);
+          price = cleanedPrice;
+          if (!price.includes('원') && /^\d+[,\d]*$/.test(price)) {
+            price += '원';
+          }
         }
       }
     }
