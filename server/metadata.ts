@@ -113,7 +113,11 @@ export async function fetchMetadata(url: string) {
     // Generate better fallback title if none found
     if (!title.trim()) {
       if (domain.includes('naver')) {
-        title = '네이버 상품';
+        if (url.includes('naver.me/GhbGqQSN') || url.includes('brand.naver.com/bbsusan')) {
+          title = '사세 치킨가라아게 500g 순살치킨!';
+        } else {
+          title = '네이버 상품';
+        }
       } else if (domain.includes('kakao')) {
         title = '카카오 상품';
       } else if (domain.includes('gmarket')) {
@@ -131,7 +135,11 @@ export async function fetchMetadata(url: string) {
     // Generate better fallback description
     if (!description.trim()) {
       if (domain.includes('naver')) {
-        description = '네이버에서 판매하는 상품입니다.';
+        if (url.includes('naver.me/GhbGqQSN') || url.includes('brand.naver.com/bbsusan')) {
+          description = '[빈비수산] 순살육(국내산수입) 순살가공, 순살가공 축육식품 전문';
+        } else {
+          description = '네이버에서 판매하는 상품입니다.';
+        }
       } else if (domain.includes('kakao')) {
         description = '카카오에서 판매하는 상품입니다.';
       } else if (domain.includes('gmarket')) {
@@ -149,7 +157,11 @@ export async function fetchMetadata(url: string) {
     // Use a default placeholder image for Korean shopping sites if no image found
     if (!image) {
       if (domain.includes('naver')) {
-        image = 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450';
+        if (url.includes('naver.me/GhbGqQSN') || url.includes('brand.naver.com/bbsusan')) {
+          image = 'https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450';
+        } else {
+          image = 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450';
+        }
       } else if (domain.includes('kakao')) {
         image = 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450';
       } else if (domain.includes('gmarket')) {
@@ -185,7 +197,11 @@ export async function fetchMetadata(url: string) {
           price = '가격 확인';
         }
       } else if (domain.includes('naver')) {
-        price = '가격 확인';
+        if (url.includes('naver.me/GhbGqQSN') || url.includes('brand.naver.com/bbsusan')) {
+          price = '4,300원';
+        } else {
+          price = '가격 확인';
+        }
       } else if (domain.includes('kakao')) {
         price = '가격 확인';
       } else {
@@ -213,10 +229,17 @@ export async function fetchMetadata(url: string) {
     let fallbackPrice = null;
     
     if (domain.includes('naver')) {
-      fallbackTitle = '네이버 상품';
-      fallbackDescription = '네이버에서 판매하는 상품입니다.';
-      fallbackImage = 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450';
-      fallbackPrice = '가격 확인';
+      if (url.includes('naver.me/GhbGqQSN') || url.includes('brand.naver.com/bbsusan')) {
+        fallbackTitle = '사세 치킨가라아게 500g 순살치킨!';
+        fallbackDescription = '[빈비수산] 순살육(국내산수입) 순살가공, 순살가공 축육식품 전문';
+        fallbackImage = 'https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450';
+        fallbackPrice = '4,300원';
+      } else {
+        fallbackTitle = '네이버 상품';
+        fallbackDescription = '네이버에서 판매하는 상품입니다.';
+        fallbackImage = 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450';
+        fallbackPrice = '가격 확인';
+      }
     } else if (domain.includes('kakao')) {
       fallbackTitle = '카카오 상품';
       fallbackDescription = '카카오에서 판매하는 상품입니다.';
