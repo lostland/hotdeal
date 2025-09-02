@@ -61,7 +61,7 @@ export default function Home() {
     return (
       <div className="min-h-screen bg-background">
         <AppHeader />
-        <main className="max-w-md mx-auto px-4 py-6">
+        <main className="w-full px-4 py-6">
           <ErrorCard
             title="링크를 불러올 수 없습니다"
             description="네트워크 연결을 확인하고 다시 시도해주세요."
@@ -76,7 +76,7 @@ export default function Home() {
     <div className="min-h-screen bg-background">
       <AppHeader />
       
-      <main className="max-w-md mx-auto pb-20">
+      <main className="w-full pb-20">
         <div className="px-4 pt-4">
           {isLoading ? (
             // Show loading cards
