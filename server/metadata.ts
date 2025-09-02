@@ -57,7 +57,7 @@ export async function fetchMetadata(url: string) {
     // Try each approach
     for (const userAgent of approaches) {
       try {
-        await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500)); // Random delay
+        await new Promise(resolve => setTimeout(resolve, Math.random() * 200 + 100)); // Shorter delay
         response = await fetch(finalUrl, {
           headers: {
             'User-Agent': userAgent,
@@ -72,7 +72,7 @@ export async function fetchMetadata(url: string) {
             'Cache-Control': 'max-age=0'
           },
           redirect: 'follow',
-          signal: AbortSignal.timeout(15000) // Increased timeout
+          signal: AbortSignal.timeout(5000) // Shorter timeout for faster fallback
         });
 
         if (response.ok) {

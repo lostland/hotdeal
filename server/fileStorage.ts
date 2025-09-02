@@ -158,51 +158,8 @@ export class FileStorage {
     
     if (!this.cache) return [];
     
-    // 모든 URL에 대해 최신 메타데이터를 가져와서 업데이트
-    const updatedLinks: Link[] = [];
-    
-    for (const url of this.cache.urls) {
-      try {
-        const metadata = await fetchMetadata(url);
-        const existingLink = this.cache.links.find(link => link.url === url);
-        const link: Link = {
-          id: existingLink?.id || randomUUID(),
-          url,
-          title: metadata.title,
-          description: metadata.description,
-          image: metadata.image,
-          domain: metadata.domain,
-          price: metadata.price,
-          createdAt: existingLink?.createdAt || new Date()
-        };
-        updatedLinks.push(link);
-      } catch (error) {
-        console.error(`Failed to update metadata for ${url}:`, error);
-        // 메타데이터 가져오기 실패시 기존 링크 데이터 사용 또는 fallback
-        const existingLink = this.cache.links.find(link => link.url === url);
-        if (existingLink) {
-          updatedLinks.push(existingLink);
-        } else {
-          // fallback 데이터 생성
-          const urlObj = new URL(url);
-          const domain = urlObj.hostname;
-          const fallbackData = this.getFallbackData(url, domain);
-          const link: Link = {
-            id: randomUUID(),
-            url,
-            ...fallbackData,
-            createdAt: new Date()
-          };
-          updatedLinks.push(link);
-        }
-      }
-    }
-    
-    // 캐시 업데이트 및 파일 저장
-    this.cache.links = updatedLinks;
-    await this.saveToFile();
-    
-    return updatedLinks.sort((a, b) => 
+    // 기존 저장된 링크만 빠르게 반환
+    return this.cache.links.sort((a, b) => 
       new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
     );
   }
