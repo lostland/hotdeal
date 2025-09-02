@@ -92,6 +92,15 @@ export function LinkCard({ link, onClick, onDelete, className, ...props }: LinkC
             </div>
           </div>
           
+          {link.price && (
+            <div 
+              className="text-lg font-bold text-primary mb-2" 
+              data-testid={`text-price-${link.id}`}
+            >
+              {link.price}
+            </div>
+          )}
+          
           {link.description && (
             <p 
               className="text-sm text-muted-foreground mb-3 line-clamp-2" 

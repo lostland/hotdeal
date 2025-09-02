@@ -32,21 +32,24 @@ export class MemStorage implements IStorage {
         title: "사세 치킨가라아게 500g 순살치킨! 4300",
         description: "[빈비수산] 순살육(국내산수입) 순살가공,순살가공 축육식품 전문",
         image: "https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450",
-        domain: "naver.me"
+        domain: "naver.me",
+        price: "4,300원"
       },
       {
         url: "https://store.kakao.com/bluemingreen/products/243568345?shareLinkUuid=ypAZ9ub0JsfqD08i&ref=SHARE_AF",
         title: "블루민그린 프리미엄 스킨케어 세트",
         description: "자연 성분으로 만든 친환경 스킨케어 제품으로 건강한 피부를 위한 선택입니다.",
         image: "https://images.unsplash.com/photo-1596755389378-c31d21fd1273?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450",
-        domain: "store.kakao.com"
+        domain: "store.kakao.com",
+        price: "29,900원"
       },
       {
         url: "https://link.gmarket.co.kr/1DbW01byu",
         title: "스마트폰 특가 할인 이벤트",
         description: "최신 스마트폰을 합리적인 가격에 만나보세요. 다양한 브랜드와 모델을 한번에!",
         image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450",
-        domain: "gmarket.co.kr"
+        domain: "gmarket.co.kr",
+        price: "399,000원"
       }
     ];
 
@@ -90,6 +93,7 @@ export class MemStorage implements IStorage {
       description: insertLink.description ?? null,
       image: insertLink.image ?? null,
       domain: insertLink.domain ?? null,
+      price: insertLink.price ?? null,
       id,
       createdAt: new Date(),
     };

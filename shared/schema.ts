@@ -16,6 +16,7 @@ export const links = pgTable("links", {
   description: text("description"),
   image: text("image"),
   domain: text("domain"),
+  price: text("price"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -30,6 +31,7 @@ export const insertLinkSchema = createInsertSchema(links).pick({
   description: true,
   image: true,
   domain: true,
+  price: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
