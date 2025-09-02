@@ -24,7 +24,7 @@ export class FileStorage {
     try {
       await fs.mkdir(path.dirname(DATA_FILE), { recursive: true });
       
-      // 기본 URL 목록
+      // 기본 URL 목록 (새로운 설치에만 사용)
       const defaultUrls = [
         "https://naver.me/GhbGqQSN",
         "https://store.kakao.com/bluemingreen/products/243568345?shareLinkUuid=ypAZ9ub0JsfqD08i&ref=SHARE_AF", 
@@ -34,6 +34,8 @@ export class FileStorage {
       try {
         const data = await fs.readFile(DATA_FILE, 'utf8');
         this.cache = JSON.parse(data);
+        console.log(`파일에서 ${this.cache.urls?.length || 0}개 URL과 ${this.cache.links?.length || 0}개 링크를 로드했습니다.`);
+        
         // 날짜 객체 복원
         if (this.cache?.links) {
           this.cache.links = this.cache.links.map(link => ({
@@ -41,7 +43,12 @@ export class FileStorage {
             createdAt: new Date(link.createdAt!)
           }));
         }
+        
+        // 기존 파일이 있으면 해당 데이터를 그대로 사용 (generateLinksFromUrls 호출 안함)
+        console.log('기존 저장된 데이터를 사용합니다.');
+        
       } catch (error) {
+        console.log('저장된 파일이 없어 기본 데이터로 초기화합니다.');
         // 파일이 없으면 기본 데이터로 초기화
         this.cache = {
           urls: defaultUrls,
