@@ -91,23 +91,71 @@ export async function fetchMetadata(url: string) {
       if (productCode && (domain.includes('gmarket') || url.includes('link.gmarket.co.kr'))) {
         console.log(`HTTP 에러 발생하지만 상품 코드로 fallback 생성: ${productCode}`);
         
-        // 상품 코드별 실제 가격 정보
-        let fallbackPrice = '가격 확인';
-        if (productCode === '2995625986') {
-          fallbackPrice = '14,900원';
-        } else if (productCode === '4070164350') {
-          fallbackPrice = '12,500원';
-        } else if (productCode === '4419692231') {
-          fallbackPrice = '24,900원';
-        } else if (productCode === '4517012388') {
-          fallbackPrice = '19,800원';
+        // 모바일 버전으로 재시도
+        const mobileUrl = `https://mitem.gmarket.co.kr/Item?goodscode=${productCode}`;
+        console.log(`모바일 버전으로 재시도: ${mobileUrl}`);
+        
+        try {
+          const mobileResponse = await fetch(mobileUrl, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_7_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.2 Mobile/15E148 Safari/604.1',
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+              'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+              'Accept-Encoding': 'gzip, deflate, br',
+              'DNT': '1',
+              'Connection': 'keep-alive',
+              'Upgrade-Insecure-Requests': '1'
+            },
+            signal: AbortSignal.timeout(8000)
+          });
+          
+          if (mobileResponse.ok) {
+            const mobileHtml = await mobileResponse.text();
+            const mobile$ = cheerio.load(mobileHtml);
+            
+            // 모바일 가격 선택자들 (확장)
+            const mobilePrice = 
+              mobile$('.item_price .price').first().text().trim() ||
+              mobile$('.price_area .price').first().text().trim() ||
+              mobile$('.prc_t').first().text().trim() ||
+              mobile$('.price_real').first().text().trim() ||
+              mobile$('.sale_price').first().text().trim() ||
+              mobile$('.discount_price').first().text().trim() ||
+              mobile$('.box_price .price').first().text().trim() ||
+              mobile$('[data-price]').attr('data-price') ||
+              mobile$('[class*="price"]').first().text().trim() ||
+              // JSON-LD 모바일에서도 시도
+              mobile$('script[type="application/ld+json"]').toArray().map(script => {
+                try {
+                  const json = JSON.parse(mobile$(script).html() || '{}');
+                  if (json['@type'] === 'Product' && json.offers && json.offers.price) {
+                    return json.offers.price + '원';
+                  }
+                  return null;
+                } catch { return null; }
+              }).find(p => p) ||
+              null;
+            
+            if (mobilePrice && mobilePrice !== '가격 확인') {
+              console.log(`모바일에서 가격 추출 성공: ${mobilePrice}`);
+              return {
+                title: 'G마켓 상품',
+                description: 'G마켓에서 판매하는 상품입니다.',
+                image: `https://gdimg.gmarket.co.kr/${productCode}/still/300`,
+                price: mobilePrice,
+                domain: domain.includes('gmarket') ? domain : 'item.gmarket.co.kr'
+              };
+            }
+          }
+        } catch (mobileError) {
+          console.log(`모바일 버전도 실패: ${mobileError instanceof Error ? mobileError.message : String(mobileError)}`);
         }
         
         return {
           title: 'G마켓 상품',
           description: 'G마켓에서 판매하는 상품입니다.',
           image: `https://gdimg.gmarket.co.kr/${productCode}/still/300`,
-          price: fallbackPrice,
+          price: '가격 확인',
           domain: domain.includes('gmarket') ? domain : 'item.gmarket.co.kr'
         };
       }
@@ -141,11 +189,11 @@ export async function fetchMetadata(url: string) {
       $('link[rel="icon"]').attr('href') ||
       null;
 
-    // Extract price information with G마켓 specific selectors
+    // Extract price information with enhanced G마켓 specific selectors
     let price = 
       $('meta[property="product:price:amount"]').attr('content') ||
       $('meta[property="product:price"]').attr('content') ||
-      // G마켓 specific price selectors
+      // G마켓 specific price selectors (more comprehensive)
       $('.item_price .price_innerwrap .price_real .price').first().text().trim() ||
       $('.item_price .discount_price').first().text().trim() ||
       $('.price_real .price').first().text().trim() ||
@@ -155,6 +203,22 @@ export async function fetchMetadata(url: string) {
       $('.real_price').first().text().trim() ||
       $('.sale_price').first().text().trim() ||
       $('#__itemDetailForm .prc_t .prc').first().text().trim() ||
+      // Additional G마켓 selectors
+      $('.box_item_price .price').first().text().trim() ||
+      $('[data-montelena="item_price"]').first().text().trim() ||
+      $('._price').first().text().trim() ||
+      $('.price_num').first().text().trim() ||
+      $('.price_value').first().text().trim() ||
+      // JSON-LD structured data
+      $('script[type="application/ld+json"]').toArray().map(script => {
+        try {
+          const json = JSON.parse($(script).html() || '{}');
+          if (json['@type'] === 'Product' && json.offers && json.offers.price) {
+            return json.offers.price + '원';
+          }
+          return null;
+        } catch { return null; }
+      }).find(p => p) ||
       // General selectors
       $('.price').first().text().trim() ||
       $('.cost').first().text().trim() ||
@@ -239,20 +303,7 @@ export async function fetchMetadata(url: string) {
 
     // Generate fallback price if none found
     if (!price || !price.trim()) {
-      if (finalDomain.includes('gmarket')) {
-        // 상품 코드별 실제 가격 정보
-        if (productCode === '2995625986') {
-          price = '14,900원';
-        } else if (productCode === '4070164350') {
-          price = '12,500원';
-        } else if (productCode === '4419692231') {
-          price = '24,900원';
-        } else if (productCode === '4517012388') {
-          price = '19,800원';
-        } else {
-          price = '가격 확인';
-        }
-      } else if (finalDomain.includes('naver') || finalDomain.includes('kakao')) {
+      if (finalDomain.includes('gmarket') || finalDomain.includes('naver') || finalDomain.includes('kakao')) {
         price = '가격 확인';
       } else {
         price = null;
@@ -317,22 +368,10 @@ export async function fetchMetadata(url: string) {
       
       if (fallbackProductCode) {
         fallbackImage = `https://gdimg.gmarket.co.kr/${fallbackProductCode}/still/300`;
-        // 상품 코드별 실제 가격 정보
-        if (fallbackProductCode === '2995625986') {
-          fallbackPrice = '14,900원';
-        } else if (fallbackProductCode === '4070164350') {
-          fallbackPrice = '12,500원';
-        } else if (fallbackProductCode === '4419692231') {
-          fallbackPrice = '24,900원';
-        } else if (fallbackProductCode === '4517012388') {
-          fallbackPrice = '19,800원';
-        } else {
-          fallbackPrice = '가격 확인';
-        }
       } else {
         fallbackImage = 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450';
-        fallbackPrice = '가격 확인';
       }
+      fallbackPrice = '가격 확인';
     } else if (domain.includes('naver')) {
       fallbackTitle = '네이버 쇼핑 상품';
       fallbackDescription = '네이버 쇼핑에서 판매하는 상품입니다.';
