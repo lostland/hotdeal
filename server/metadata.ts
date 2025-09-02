@@ -138,10 +138,13 @@ export async function fetchMetadata(url: string) {
             
             if (mobilePrice) {
               console.log(`모바일에서 가격 추출 성공: ${mobilePrice}`);
+              const mobileTitle = mobile$('meta[property="og:title"]').attr('content') || mobile$('title').text() || null;
+              const mobileDescription = mobile$('meta[property="og:description"]').attr('content') || mobile$('meta[name="description"]').attr('content') || null;
+              const mobileImage = mobile$('meta[property="og:image"]').attr('content') || (productCode ? `https://gdimg.gmarket.co.kr/${productCode}/still/300` : null);
               return {
-                title: 'G마켓 상품',
-                description: 'G마켓에서 판매하는 상품입니다.',
-                image: `https://gdimg.gmarket.co.kr/${productCode}/still/300`,
+                title: mobileTitle,
+                description: mobileDescription,
+                image: mobileImage,
                 price: mobilePrice,
                 domain: domain.includes('gmarket') ? domain : 'item.gmarket.co.kr'
               };
@@ -152,9 +155,9 @@ export async function fetchMetadata(url: string) {
         }
         
         return {
-          title: 'G마켓 상품',
-          description: 'G마켓에서 판매하는 상품입니다.',
-          image: `https://gdimg.gmarket.co.kr/${productCode}/still/300`,
+          title: null,
+          description: null,
+          image: productCode ? `https://gdimg.gmarket.co.kr/${productCode}/still/300` : null,
           price: null,
           domain: domain.includes('gmarket') ? domain : 'item.gmarket.co.kr'
         };
@@ -273,48 +276,14 @@ export async function fetchMetadata(url: string) {
       }
     }
 
-    // Generate better fallback title if none found
-    if (!title.trim()) {
-      if (domain.includes('naver')) {
-        title = '네이버 쇼핑 상품';
-      } else if (domain.includes('kakao')) {
-        title = '카카오 쇼핑 상품';
-      } else if (domain.includes('gmarket')) {
-        title = 'G마켓 상품';
-      } else {
-        title = `${domain} 페이지`;
-      }
-    }
+    // Use extracted title only - no fallback
 
-    // Generate better fallback description
-    if (!description.trim()) {
-      if (domain.includes('naver')) {
-        description = '네이버 쇼핑에서 판매하는 상품입니다.';
-      } else if (domain.includes('kakao')) {
-        description = '카카오 쇼핑에서 판매하는 상품입니다.';
-      } else if (domain.includes('gmarket')) {
-        description = 'G마켓에서 판매하는 상품입니다.';
-      } else {
-        description = `${domain}의 페이지입니다.`;
-      }
-    }
+    // Use extracted description only - no fallback
 
-    // Use a default placeholder image for Korean shopping sites if no image found
-    if (!image) {
-      if (finalDomain.includes('naver')) {
-        image = 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450';
-      } else if (finalDomain.includes('kakao')) {
-        image = 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450';
-      } else if (finalDomain.includes('gmarket')) {
-        if (productCode) {
-          // Try to construct product image URL for G마켓 products
-          image = `https://gdimg.gmarket.co.kr/${productCode}/still/300`;
-        } else {
-          image = 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450';
-        }
-      } else {
-        image = 'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450';
-      }
+    // Use extracted image only - no hardcoded fallbacks
+    if (!image && finalDomain.includes('gmarket') && productCode) {
+      // Only for gmarket with valid product code, construct dynamic image URL
+      image = `https://gdimg.gmarket.co.kr/${productCode}/still/300`;
     }
 
     // Ensure absolute URLs for images
@@ -373,9 +342,9 @@ export async function fetchMetadata(url: string) {
     }
 
     return {
-      title: title.trim().substring(0, 200) || `${finalDomain} 페이지`,
-      description: description.trim().substring(0, 300) || `${finalDomain}의 페이지입니다.`,
-      image: image && image.startsWith('http') ? image : 'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450',
+      title: title.trim().substring(0, 200) || null,
+      description: description.trim().substring(0, 300) || null,
+      image: image && image.startsWith('http') ? image : null,
       price: price && price.trim() ? price.trim() : null,
       domain: finalDomain
     };
@@ -425,29 +394,19 @@ export async function fetchMetadata(url: string) {
         }
       }
       
-      fallbackTitle = 'G마켓 상품';
-      fallbackDescription = 'G마켓에서 판매하는 상품입니다.';
+      fallbackTitle = '';
+      fallbackDescription = '';
       
       if (fallbackProductCode) {
         fallbackImage = `https://gdimg.gmarket.co.kr/${fallbackProductCode}/still/300`;
       } else {
-        fallbackImage = 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450';
+        fallbackImage = '';
       }
       fallbackPrice = null;
-    } else if (domain.includes('naver')) {
-      fallbackTitle = '네이버 쇼핑 상품';
-      fallbackDescription = '네이버 쇼핑에서 판매하는 상품입니다.';
-      fallbackImage = 'https://images.unsplash.com/photo-1472851294608-062f824d29cc?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450';
-      fallbackPrice = null;
-    } else if (domain.includes('kakao')) {
-      fallbackTitle = '카카오 쇼핑 상품';
-      fallbackDescription = '카카오 쇼핑에서 판매하는 상품입니다.';
-      fallbackImage = 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450';
-      fallbackPrice = null;
     } else {
-      fallbackTitle = `${domain} 페이지`;
-      fallbackDescription = `${domain}의 페이지입니다.`;
-      fallbackImage = 'https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&h=450';
+      fallbackTitle = '';
+      fallbackDescription = '';
+      fallbackImage = '';
       fallbackPrice = null;
     }
     

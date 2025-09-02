@@ -1,4 +1,17 @@
 {
-  "urls": [],
-  "links": []
+  "urls": [
+    "https://www.jnmall.kr/product/8247"
+  ],
+  "links": [
+    {
+      "id": "f4b9eb20-2717-4e81-bf0b-e270f6894230",
+      "url": "https://www.jnmall.kr/product/8247",
+      "title": "(더줌) 완도 산지직송 전복 8-9미 1kg",
+      "description": "223117",
+      "image": "https://obj-g-1.ktcloud.com/product/8248_PRODUCT_9292a5fa-bee8-4511-9752-263d832069c2",
+      "domain": "www.jnmall.kr",
+      "price": "2825,600원35,600원",
+      "createdAt": "2025-09-02T17:03:42.138Z"
+    }
+  ]
 }
