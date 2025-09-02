@@ -155,7 +155,7 @@ export async function fetchMetadata(url: string) {
           title: 'G마켓 상품',
           description: 'G마켓에서 판매하는 상품입니다.',
           image: `https://gdimg.gmarket.co.kr/${productCode}/still/300`,
-          price: '가격 확인',
+          price: null, // 가격 확인 메시지 제거
           domain: domain.includes('gmarket') ? domain : 'item.gmarket.co.kr'
         };
       }
@@ -253,6 +253,9 @@ export async function fetchMetadata(url: string) {
       $('[class*="price"]').first().text().trim() ||
       null;
 
+    // Debug: Log what price we found
+    console.log(`원본 가격 데이터 (${finalDomain}): "${price}"`);
+
     // If we don't have productCode yet, try to extract it
     if (!productCode && finalUrl.includes('gmarket.co.kr') && finalUrl.includes('goodscode=')) {
       const match = finalUrl.match(/goodscode=(\d+)/);
@@ -327,27 +330,32 @@ export async function fetchMetadata(url: string) {
         /^[\s\-\+\=]+$/,  // Only symbols/spaces
       ];
       
-      const isInvalidPrice = invalidPricePatterns.some(pattern => pattern.test(price?.trim() || ''));
+      const isInvalidPrice = invalidPricePatterns.some(pattern => {
+        const matches = pattern.test(price?.trim() || '');
+        if (matches) {
+          console.log(`패턴 "${pattern}" 매칭됨: "${price}"`);
+        }
+        return matches;
+      });
       
       if (isInvalidPrice) {
         console.log(`잘못된 가격 데이터 필터링: "${price}"`);
         price = null;
       } else {
         // Clean up price formatting
-        price = price.replace(/[^\d,원]/g, '').trim();
+        const cleanedPrice = price.replace(/[^\d,원]/g, '').trim();
+        console.log(`가격 정리: "${price}" -> "${cleanedPrice}"`);
+        price = cleanedPrice;
         if (!price.includes('원') && /^\d+[,\d]*$/.test(price)) {
           price += '원';
         }
       }
     }
 
-    // Generate fallback price if none found
+    // Generate fallback price if none found - 가격을 찾지 못하면 null로 설정
     if (!price || !price.trim()) {
-      if (finalDomain.includes('gmarket') || finalDomain.includes('naver') || finalDomain.includes('kakao') || finalDomain.includes('11st')) {
-        price = '가격 확인';
-      } else {
-        price = null;
-      }
+      console.log(`최종 가격 없음, null로 설정`);
+      price = null;
     }
 
     return {
