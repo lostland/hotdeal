@@ -1,4 +1,39 @@
 {
-  "urls": [],
-  "links": []
+  "urls": [
+    "https://item.gmarket.co.kr/Item?goodscode=4070164350",
+    "https://link.gmarket.co.kr/VPPLWh99HW",
+    "https://item.gmarket.co.kr/Item?goodscode=2995625986"
+  ],
+  "links": [
+    {
+      "id": "ea9ea28f-7cdb-4325-b01f-d175fcc60d77",
+      "url": "https://item.gmarket.co.kr/Item?goodscode=4070164350",
+      "title": "G마켓 상품",
+      "description": "G마켓에서 판매하는 상품입니다.",
+      "image": "https://gdimg.gmarket.co.kr/4070164350/still/300",
+      "domain": "item.gmarket.co.kr",
+      "price": "가격 확인",
+      "createdAt": "2025-09-02T16:03:19.764Z"
+    },
+    {
+      "id": "4528329a-1373-4d1a-a35a-9aff31f76d76",
+      "url": "https://link.gmarket.co.kr/VPPLWh99HW",
+      "title": "G마켓 상품",
+      "description": "G마켓에서 판매하는 상품입니다.",
+      "image": "https://gdimg.gmarket.co.kr/2995625986/still/300",
+      "domain": "link.gmarket.co.kr",
+      "price": "가격 확인",
+      "createdAt": "2025-09-02T16:03:56.665Z"
+    },
+    {
+      "id": "dc13a1a7-879d-46e3-95bc-29992c5e9dd8",
+      "url": "https://item.gmarket.co.kr/Item?goodscode=2995625986",
+      "title": "G마켓 상품",
+      "description": "G마켓에서 판매하는 상품입니다.",
+      "image": "https://gdimg.gmarket.co.kr/2995625986/still/300",
+      "domain": "item.gmarket.co.kr",
+      "price": "가격 확인",
+      "createdAt": "2025-09-02T16:04:17.390Z"
+    }
+  ]
 }
