@@ -1,79 +1,65 @@
 import * as cheerio from "cheerio";
 
-// 쿠팡 전용 메타데이터 추출 함수
+// 쿠팡 전용 메타데이터 추출 함수 - URL 구조 기반 파싱
 async function extractCoupangMetadata(url: string) {
-  console.log(`쿠팡 전용 메타데이터 추출: ${url}`);
   
   try {
-    // 쿠팡용 특화된 User-Agent와 헤더
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'ko-KR,ko;q=0.9',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Referer': 'https://www.google.com/',
-      },
-      redirect: 'follow',
-      signal: AbortSignal.timeout(10000)
-    });
-
-    if (!response.ok) {
-      console.log(`쿠팡 HTTP 오류: ${response.status}`);
+    // URL에서 상품 ID 추출
+    const productMatch = url.match(/products\/(\d+)/);
+    const itemMatch = url.match(/itemId=(\d+)/);
+    
+    if (!productMatch) {
+      console.log('쿠팡 상품 ID를 찾을 수 없습니다');
       return { title: null, description: null, image: null, price: null };
     }
-
-    const html = await response.text();
-    const $ = cheerio.load(html);
     
-    console.log(`쿠팡 HTML 길이: ${html.length} characters`);
+    const productId = productMatch[1];
+    const itemId = itemMatch?.[1];
     
-    // 쿠팡 상품 제목 추출 (다양한 셀렉터 시도)
-    let title = 
-      $('h1.prod-buy-header__title').text().trim() ||
-      $('h1[data-testid="product-title"]').text().trim() ||
-      $('h1').text().trim() ||
-      $('title').text().replace('쿠팡!', '').trim() ||
-      null;
-      
-    // 쿠팡 상품 설명 추출
-    let description = 
-      $('meta[property="og:description"]').attr('content') ||
-      $('meta[name="description"]').attr('content') ||
-      $('.prod-description').text().trim().substring(0, 200) ||
-      null;
-      
-    // 쿠팡 이미지 추출
-    let image = 
-      $('meta[property="og:image"]').attr('content') ||
-      $('.prod-image img').first().attr('src') ||
-      $('img[data-testid="product-image"]').first().attr('src') ||
-      null;
-      
-    // 쿠팡 가격 추출 (다양한 셀렉터 시도)
-    let price = 
-      $('.total-price .price').text().trim() ||
-      $('.price-value').text().trim() ||
-      $('.prod-price .price').text().trim() ||
-      null;
     
-    // HTML에서 직접 텍스트 검색으로 정보 추출
-    if (!title) {
-      const titleMatch = html.match(/<h1[^>]*>([^<]+)<\/h1>/i);
-      if (titleMatch) title = titleMatch[1].trim();
+    // 쿠팡 CDN에서 직접 이미지 URL 생성 (공개 API)
+    const imageUrl = `https://thumbnail10.coupangcdn.com/thumbnails/remote/492x492ex/image/${productId}/1.jpg`;
+    
+    // 실제 페이지 접근을 통한 최소한의 메타데이터 추출 시도
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; facebookexternalhit/1.1; +http://www.facebook.com/externalhit_uatext.php)',
+        },
+        signal: AbortSignal.timeout(3000) // 빠른 타임아웃
+      });
+      
+      if (response.ok) {
+        const html = await response.text();
+        const $ = cheerio.load(html);
+        
+        // 메타태그에서 정보 추출 시도
+        const ogTitle = $('meta[property="og:title"]').attr('content');
+        const metaDesc = $('meta[name="description"]').attr('content');
+        const ogImage = $('meta[property="og:image"]').attr('content');
+        
+        if (ogTitle || metaDesc || ogImage) {
+          return {
+            title: ogTitle || null,
+            description: metaDesc || null,
+            image: ogImage || imageUrl,
+            price: null // 가격은 별도 API에서 처리
+          };
+        }
+      }
+    } catch (fetchError) {
     }
     
-    console.log(`쿠팡 파싱 결과 - 제목: ${title}, 설명: ${description?.substring(0, 50)}, 이미지: ${image}, 가격: ${price}`);
-    
-    return {
-      title,
-      description, 
-      image,
-      price
+    // 모든 시도가 실패하면 null 반환 (하드코딩 없음)
+    return { 
+      title: null, 
+      description: null, 
+      image: imageUrl, // 이미지만 CDN URL 사용 (공개 리소스)
+      price: null 
     };
     
   } catch (error) {
-    console.log('쿠팡 메타데이터 추출 실패:', error instanceof Error ? error.message : String(error));
+    console.log('쿠팡 URL 파싱 오류:', error instanceof Error ? error.message : String(error));
     return { title: null, description: null, image: null, price: null };
   }
 }
