@@ -11,21 +11,25 @@ export async function fetchMetadata(url: string) {
     const domain = urlObj.hostname;
     
     // 쿠팡 URL에 대한 즉시 처리 - 15초 대기 없이 바로 기본 정보 제공
-    if (domain.includes('coupang.com')) {
+    if (domain.includes('coupang.com') || url.includes('link.coupang.com')) {
       const coupangProductId = url.match(/products\/(\d+)/)?.[1];
       const coupangItemId = url.match(/itemId=(\d+)/)?.[1];
       
-      if (coupangProductId || coupangItemId) {
-        console.log(`쿠팡 URL 즉시 처리: productId=${coupangProductId}, itemId=${coupangItemId}`);
-        
-        // 쿠팡은 즉시 기본 메타데이터 반환하여 빠른 사용자 경험 제공
-        return {
-          title: `쿠팡 상품`,
-          description: '쿠팡에서 판매하는 상품입니다',
-          image: `https://thumbnail10.coupangcdn.com/thumbnails/remote/492x492ex/${coupangProductId ? `image/${coupangProductId}/1.jpg` : 'default.jpg'}`,
-          price: null // 가격은 별도 API에서 시도
-        };
-      }
+      console.log(`쿠팡 URL 즉시 처리 시작: ${url}`);
+      console.log(`추출된 ID - productId: ${coupangProductId}, itemId: ${coupangItemId}`);
+      
+      // 쿠팡은 즉시 기본 메타데이터 반환하여 빠른 사용자 경험 제공
+      const result = {
+        title: coupangProductId ? `쿠팡 상품 ${coupangProductId}` : '쿠팡 상품',
+        description: '쿠팡에서 판매하는 상품입니다',
+        image: coupangProductId ? 
+          `https://thumbnail10.coupangcdn.com/thumbnails/remote/492x492ex/image/${coupangProductId}/1.jpg` : 
+          'https://image7.coupangcdn.com/image/coupang/common/logo_coupang_350x350.png',
+        price: null // 가격은 별도 API에서 시도
+      };
+      
+      console.log(`쿠팡 즉시 처리 결과:`, result);
+      return result;
     }
     
     // For G마켓 redirect links, try to get the actual product URL first
