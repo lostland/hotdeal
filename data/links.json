@@ -2,9 +2,21 @@
   "urls": [
     "https://www.11st.co.kr/products/7339388653",
     "https://item.gmarket.co.kr/Item?goodscode=3423817979",
-    "https://item.gmarket.co.kr/Item?goodscode=1741519653"
+    "https://item.gmarket.co.kr/Item?goodscode=1741519653",
+    "https://link.gmarket.co.kr/RNuYpATm1M"
   ],
   "links": [
+    {
+      "id": "e82b47fc-8673-4f95-9da2-e26df3b98067",
+      "url": "https://item.gmarket.co.kr/Item?goodscode=1741519653",
+      "title": "Just a moment...",
+      "description": null,
+      "image": null,
+      "domain": "item.gmarket.co.kr",
+      "price": null,
+      "note": null,
+      "createdAt": "2025-09-03T05:44:16.338Z"
+    },
     {
       "id": "82e4e4ff-86e9-4210-b400-db08ce5217b5",
       "url": "https://item.gmarket.co.kr/Item?goodscode=3423817979",
@@ -27,15 +39,15 @@
       "createdAt": "2025-09-03T02:08:29.346Z"
     },
     {
-      "id": "e82b47fc-8673-4f95-9da2-e26df3b98067",
-      "url": "https://item.gmarket.co.kr/Item?goodscode=1741519653",
+      "id": "3a24363a-7d69-4a7c-8ac4-0793f0f602ea",
+      "url": "https://link.gmarket.co.kr/RNuYpATm1M",
       "title": "Just a moment...",
       "description": null,
       "image": null,
-      "domain": "item.gmarket.co.kr",
+      "domain": "link.gmarket.co.kr",
       "price": null,
       "note": null,
-      "createdAt": "2025-09-03T05:44:16.338Z"
+      "createdAt": "2025-09-03T05:52:34.389Z"
     }
   ]
 }

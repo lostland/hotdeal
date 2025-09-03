@@ -100,6 +100,8 @@ export async function fetchMetadata(url: string) {
     const approaches = [
 
       // Mobile user agents
+      'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+
       'Mozilla/5.0 (Linux; Android 10; SM-G975F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
       'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
       // Korean browser patterns (more likely to be allowed)
@@ -125,7 +127,7 @@ export async function fetchMetadata(url: string) {
           headers: {
             'User-Agent': userAgent,
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-            //'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+            'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
             //'Accept-Encoding': 'gzip, deflate, br',
             //'Referer': 'https://www.google.com/',
             //'Sec-Fetch-Dest': 'document',
@@ -138,10 +140,14 @@ export async function fetchMetadata(url: string) {
           signal: AbortSignal.timeout(5000) // Shorter timeout for faster fallback
         });
 
-        //if (response.ok) {
+        if (response.ok) {
           console.log(`성공적으로 페이지 로드: ${userAgent.slice(0, 30)}...`);
           break;
-        //}
+        }
+        else
+        {
+          console.log(`페이지 로드 실패: ${response.status}`);
+        }
       } catch (error) {
         lastError = error;
         console.log(`시도 실패 (${userAgent.slice(0, 30)}...):`, error instanceof Error ? error.message : String(error));
@@ -265,32 +271,54 @@ export async function fetchMetadata(url: string) {
       console.log(`meta[${i}]: ${name} = "${content}"`);
     });
     
+    // 11번가 가격 디버깅
+    if (finalDomain.includes('11st.co.kr')) {
+      console.log('=== 11번가 가격 선택자 디버깅 ===');
+      const priceSelectors = [
+        '.prc_t .prc',
+        '.sale_price',
+        '.price_real',
+        '.prd_price .price',
+        '.total_price .price',
+        '.selling_price',
+        '.current_price'
+      ];
+      
+      priceSelectors.forEach(selector => {
+        const element = $(selector).first();
+        if (element.length > 0) {
+          console.log(`${selector}: "${element.text().trim()}"`);
+        }
+      });
+    }
 
 
     // Extract price information with site-specific selectors
     let price = 
       $('meta[property="product:price:amount"]').attr('content') ||
       $('meta[property="product:price"]').attr('content') ||
-      // 11번가 specific price selectors (더 구체적으로)
+      // 11번가 specific price selectors (더 정확한 선택자들)
       (finalDomain.includes('11st.co.kr') ? (
-        // 가격정보 섹션에서 직접 추출
-        $('div:contains("가격정보")').next().text().trim() ||
-        $('.prc_price').first().text().trim() ||
-        $('.sale_price .value').first().text().trim() ||
+        // 메인 가격 요소들 먼저 시도
+        $('.prc_t .prc').first().text().trim() ||
         $('.sale_price').first().text().trim() ||
-        $('.price_innfo .sale_price').first().text().trim() ||
+        $('.price_real').first().text().trim() ||
+        $('.prd_price .price').first().text().trim() ||
         $('.total_price .price').first().text().trim() ||
+        $('.selling_price').first().text().trim() ||
+        $('.current_price').first().text().trim() ||
+        // 더 구체적인 11번가 선택자들
+        $('.prc_price').first().text().trim() ||
         $('.c_prd_price .sale').first().text().trim() ||
+        $('.price_innfo .sale_price').first().text().trim() ||
         $('.prd_price_info .sale_price').first().text().trim() ||
         $('.price_area .sale_price').first().text().trim() ||
         $('.prd_price .price_sale').first().text().trim() ||
         $('.sellprice').first().text().trim() ||
         $('[data-log-actionid-label="price"]').first().text().trim() ||
-        // 더 포괄적인 선택자 (하지만 필터링 강화로 잘못된 데이터는 걸러냄)
-        $('*:contains("원")').filter((i, el) => {
-          const text = $(el).text().trim();
-          return /\d+[,\d]*원/.test(text) && !text.includes('총') && !text.includes('이미지') && !text.includes('리뷰');
-        }).first().text().trim() ||
+        // 가격 정보가 담긴 특정 요소들만 선택 (포괄적인 선택자 제거)
+        $('.price_wrap .price').first().text().trim() ||
+        $('.price_info .sale_price').first().text().trim() ||
         null
       ) : null) ||
       // G마켓 specific price selectors (more comprehensive)
