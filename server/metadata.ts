@@ -59,9 +59,13 @@ export async function fetchMetadata(url: string) {
     let lastError = null;
 
     // Try each approach
+    console.log(`----------------------------------------------------------`);
+    console.log(`${finalUrl}`)
     for (const userAgent of approaches) {
       try {
-        c
+        
+        console.log(`User-Agent: ${userAgent}`);
+        
         await new Promise(resolve => setTimeout(resolve, Math.random() * 200 + 100)); // Shorter delay
         response = await fetch(finalUrl, {
           headers: {
