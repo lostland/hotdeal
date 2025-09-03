@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ExternalLink, Trash2, Plus, LogOut } from "lucide-react";
+import { ExternalLink, Trash2, Plus, LogOut, Edit2, Save, X } from "lucide-react";
+import { type Link } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -15,11 +16,20 @@ export default function Admin() {
   const [newUrl, setNewUrl] = useState("");
   const [newNote, setNewNote] = useState("");
   const [loginError, setLoginError] = useState("");
+  const [editingLink, setEditingLink] = useState<Link | null>(null);
+  const [editUrl, setEditUrl] = useState("");
+  const [editNote, setEditNote] = useState("");
   const { toast } = useToast();
 
   // URLs 조회
   const { data: urls = [], refetch: refetchUrls } = useQuery<string[]>({
     queryKey: ["/api/admin/urls"],
+    enabled: isLoggedIn,
+  });
+
+  // Links 조회 (참고사항 포함)
+  const { data: links = [], refetch: refetchLinks } = useQuery<Link[]>({
+    queryKey: ["/api/links"],
     enabled: isLoggedIn,
   });
 
@@ -57,6 +67,7 @@ export default function Admin() {
         description: "새로운 URL이 성공적으로 추가되었습니다.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/urls"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/links"] });
     },
     onError: (error: any) => {
       toast({
@@ -78,6 +89,7 @@ export default function Admin() {
         description: "URL이 성공적으로 삭제되었습니다.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/urls"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/links"] });
     },
     onError: (error: any) => {
       toast({
@@ -110,6 +122,28 @@ export default function Admin() {
     setUsername("");
     setPassword("");
     setLoginError("");
+  };
+
+  const handleEditLink = (link: Link) => {
+    setEditingLink(link);
+    setEditUrl(link.url);
+    setEditNote(link.note || "");
+  };
+
+  const handleCancelEdit = () => {
+    setEditingLink(null);
+    setEditUrl("");
+    setEditNote("");
+  };
+
+  const handleSaveEdit = () => {
+    if (editingLink) {
+      // 여기서는 URL과 note를 함께 업데이트하는 API가 필요합니다
+      // 현재는 삭제 후 재추가로 구현
+      removeUrlMutation.mutate(editingLink.url);
+      addUrlMutation.mutate({ url: editUrl, note: editNote.trim() || undefined });
+      handleCancelEdit();
+    }
   };
 
   // 로그인 페이지
@@ -242,40 +276,104 @@ export default function Admin() {
             <CardTitle>등록된 URL 목록</CardTitle>
           </CardHeader>
           <CardContent>
-            {urls.length === 0 ? (
+            {links.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 등록된 URL이 없습니다.
               </div>
             ) : (
               <div className="space-y-4">
-                {urls.map((url) => (
+                {links.map((link) => (
                   <div
-                    key={url}
-                    className="flex items-center justify-between p-4 border border-border rounded-lg"
-                    data-testid={`url-item-${btoa(url)}`}
+                    key={link.id}
+                    className="p-4 border border-border rounded-lg"
+                    data-testid={`link-item-${link.id}`}
                   >
-                    <div className="flex-1 min-w-0">
-                      <a
-                        href={url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline break-all flex items-center gap-2"
-                        data-testid="link-url"
-                      >
-                        <ExternalLink className="w-4 h-4 flex-shrink-0" />
-                        {url}
-                      </a>
-                    </div>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleRemoveUrl(url)}
-                      disabled={removeUrlMutation.isPending}
-                      data-testid={`button-remove-${btoa(url)}`}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      삭제
-                    </Button>
+                    {editingLink && editingLink.id === link.id ? (
+                      // 편집 모드
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium mb-1">URL</label>
+                          <Input
+                            value={editUrl}
+                            onChange={(e) => setEditUrl(e.target.value)}
+                            placeholder="https://example.com"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">참고사항</label>
+                          <Input
+                            value={editNote}
+                            onChange={(e) => setEditNote(e.target.value)}
+                            placeholder="특가, 할인정보, 기타 메모 등..."
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={handleSaveEdit}
+                            disabled={!editUrl.trim()}
+                          >
+                            <Save className="w-4 h-4 mr-1" />
+                            저장
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleCancelEdit}
+                          >
+                            <X className="w-4 h-4 mr-1" />
+                            취소
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      // 일반 표시 모드
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <a
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline break-all flex items-center gap-2 flex-1"
+                            data-testid="link-url"
+                          >
+                            <ExternalLink className="w-4 h-4 flex-shrink-0" />
+                            {link.url}
+                          </a>
+                          <div className="flex gap-2 ml-4">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditLink(link)}
+                              data-testid={`button-edit-${link.id}`}
+                            >
+                              <Edit2 className="w-4 h-4" />
+                              수정
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleRemoveUrl(link.url)}
+                              disabled={removeUrlMutation.isPending}
+                              data-testid={`button-remove-${link.id}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              삭제
+                            </Button>
+                          </div>
+                        </div>
+                        {link.note && (
+                          <div className="text-sm text-muted-foreground bg-muted/50 p-2 rounded">
+                            <strong>참고사항:</strong> {link.note}
+                          </div>
+                        )}
+                        {link.title && (
+                          <div className="text-sm text-muted-foreground">
+                            <strong>제목:</strong> {link.title}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
