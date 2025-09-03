@@ -8,23 +8,35 @@ import { fetchMetadata } from "./metadata";
 let wss: WebSocketServer;
 
 // fetchMetadata 순차 처리를 위한 큐
-const metadataQueue: Array<() => Promise<any>> = [];
+const metadataQueue: Array<{ url: string, task: () => Promise<any> }> = [];
 let isProcessing = false;
+let lastDomain = '';
 
 async function processMetadataQueue() {
   if (isProcessing || metadataQueue.length === 0) return;
   
   isProcessing = true;
   while (metadataQueue.length > 0) {
-    const task = metadataQueue.shift();
-    if (task) {
+    const item = metadataQueue.shift();
+    if (item) {
       try {
-        await task();
+        // 현재 URL의 도메인 추출
+        const currentDomain = new URL(item.url).hostname;
+        
+        // 같은 사이트면 1초, 다른 사이트면 100ms 대기
+        let delay = 100;
+        if (lastDomain === currentDomain) {
+          delay = 1000; // 같은 사이트: 1초
+        }
+        
+        await item.task();
+        lastDomain = currentDomain;
+        
+        // 요청 간 간격 추가
+        await new Promise(resolve => setTimeout(resolve, delay));
       } catch (error) {
         console.error('Queue task error:', error);
       }
-      // 요청 간 간격 추가
-      await new Promise(resolve => setTimeout(resolve, 100));
     }
   }
   isProcessing = false;
@@ -32,12 +44,15 @@ async function processMetadataQueue() {
 
 function queueMetadataRequest(url: string): Promise<any> {
   return new Promise((resolve, reject) => {
-    metadataQueue.push(async () => {
-      try {
-        const result = await fetchMetadata(url);
-        resolve(result);
-      } catch (error) {
-        reject(error);
+    metadataQueue.push({
+      url,
+      task: async () => {
+        try {
+          const result = await fetchMetadata(url);
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        }
       }
     });
     processMetadataQueue();
