@@ -44,13 +44,14 @@ export async function fetchMetadata(url: string) {
 
     // Try multiple approaches to fetch data
     const approaches = [
-      // Korean browser patterns (more likely to be allowed)
-//      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0',
-//      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
-//      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+
       // Mobile user agents
       'Mozilla/5.0 (Linux; Android 10; SM-G975F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
       'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+      // Korean browser patterns (more likely to be allowed)
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
     ];
 
@@ -60,19 +61,20 @@ export async function fetchMetadata(url: string) {
     // Try each approach
     for (const userAgent of approaches) {
       try {
+        c
         await new Promise(resolve => setTimeout(resolve, Math.random() * 200 + 100)); // Shorter delay
         response = await fetch(finalUrl, {
           headers: {
             'User-Agent': userAgent,
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-            //'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
-            //'Accept-Encoding': 'gzip, deflate, br',
-            //'Referer': 'https://www.google.com/',
-            //'Sec-Fetch-Dest': 'document',
-            //'Sec-Fetch-Mode': 'navigate',
-            //'Sec-Fetch-Site': 'cross-site',
-            //'Upgrade-Insecure-Requests': '1',
-            //'Cache-Control': 'max-age=0'
+            'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Referer': 'https://www.google.com/',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'cross-site',
+            'Upgrade-Insecure-Requests': '1',
+            'Cache-Control': 'max-age=0'
           },
           redirect: 'follow',
           signal: AbortSignal.timeout(5000) // Shorter timeout for faster fallback
@@ -207,7 +209,7 @@ export async function fetchMetadata(url: string) {
       }
     }
 
-    /*
+    
     console.log(`meta size = ${$('meta').length}`);
     // 모든 meta 태그 출력
     $('meta').each((i, el) => {
@@ -216,7 +218,7 @@ export async function fetchMetadata(url: string) {
       const content = $el.attr('content') || '';
       console.log(`meta[${i}]: ${name} = "${content}"`);
     });
-    */
+    
 
 
     // Extract price information with site-specific selectors

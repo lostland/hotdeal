@@ -1,6 +1,7 @@
 {
   "urls": [
-    "https://www.11st.co.kr/products/7339388653"
+    "https://www.11st.co.kr/products/7339388653",
+    "https://smartstore.naver.com/nice-to-meat-you/products/12137572338"
   ],
   "links": [
     {
@@ -12,6 +13,16 @@
       "domain": "www.11st.co.kr",
       "price": null,
       "createdAt": "2025-09-03T02:08:29.346Z"
+    },
+    {
+      "id": "43d5730e-1fa2-43da-a3ac-f10ab3f1e65c",
+      "url": "https://smartstore.naver.com/nice-to-meat-you/products/12137572338",
+      "title": "",
+      "description": "",
+      "image": "",
+      "domain": "smartstore.naver.com",
+      "price": null,
+      "createdAt": "2025-09-03T04:20:20.046Z"
     }
   ]
 }
