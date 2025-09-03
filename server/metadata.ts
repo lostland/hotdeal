@@ -1,71 +1,6 @@
 import * as cheerio from "cheerio";
-import { Builder, Browser, WebDriver, By, until } from 'selenium-webdriver';
-import { Options, ServiceBuilder } from 'selenium-webdriver/chrome';
 
 
-async function fetchWithSelenium(url: string) {
-  let driver: WebDriver | null = null;
-  try {
-    // Chrome 옵션 설정 (더 사실적인 브라우저 시뮬레이션)
-    const options = new Options();
-    options.addArguments('--headless');
-    options.addArguments('--no-sandbox');
-    options.addArguments('--disable-dev-shm-usage');
-    options.addArguments('--disable-gpu');
-    options.addArguments('--disable-extensions');
-    options.addArguments('--disable-web-security');
-    options.addArguments('--disable-blink-features=AutomationControlled');
-    options.addArguments('--lang=ko-KR');
-    options.addArguments('--window-size=1920,1080');
-    options.addArguments('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
-    options.addArguments('--accept-lang=ko-KR,ko;q=0.9,en;q=0.8');
-    options.setChromeBinaryPath('/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium-browser');
-
-    console.log(`Selenium으로 페이지 로드 시도: ${url}`);
-
-    const service = new ServiceBuilder('/nix/store/3qnxr5x6gw3k9a9i7d0akz0m6bksbwff-chromedriver-125.0.6422.141/bin/chromedriver');
-    
-    driver = await new Builder()
-      .forBrowser(Browser.CHROME)
-      .setChromeOptions(options)
-      .setChromeService(service)
-      .build();
-
-    console.log(`Selenium 드라이버 생성 완료`)
-    
-    // 페이지 로드 및 대기 시간 추가
-    await driver.get(url);
-    
-    // 초기 대기 (Cloudflare 보호 페이지 우회)
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    // "Just a moment" 페이지인지 확인하고 추가 대기
-    let currentTitle = await driver.getTitle();
-    if (currentTitle.includes("Just a moment") || currentTitle.includes("Please wait")) {
-      console.log("Cloudflare 보호 페이지 감지, 추가 대기 중...");
-      await new Promise(resolve => setTimeout(resolve, 5000));
-      currentTitle = await driver.getTitle();
-    }
-    
-    // 제목이 로드될 때까지 대기 (최대 10초)
-    try {
-      await driver.wait(until.titleMatches(/^(?!Just a moment|Please wait).+/), 10000);
-    } catch {
-      // 제목 로드 실패해도 계속 진행
-      console.log("제목 대기 실패, 현재 제목:", currentTitle);
-    }
-    
-    // 페이지 소스 가져오기
-    const html = await driver.getPageSource();
-    console.log(`Selenium으로 성공적으로 페이지 로드 완료`);
-    
-    return html;
-  } finally {
-    if (driver) {
-      await driver.quit();
-    }
-  }
-}
 
 export async function fetchMetadata(url: string) {
   try {
@@ -167,70 +102,8 @@ export async function fetchMetadata(url: string) {
     }
 
     if (!response || !response.ok) {
-      // 일반 fetch 실패시 Selenium 시도
-      console.log(`일반 fetch 실패, Selenium으로 재시도...`);
-      try {
-        const html = await fetchWithSelenium(finalUrl);
-        const $ = cheerio.load(html);
-        
-        // 동일한 메타데이터 추출 로직 적용
-        let title = 
-          $('meta[property="og:title"]').attr('content') ||
-          $('meta[name="twitter:title"]').attr('content') ||
-          $('meta[name="title"]').attr('content') ||
-          $('title').text() ||
-          $('h1').first().text() ||
-          '';
-
-        let description = 
-          $('meta[property="og:description"]').attr('content') ||
-          $('meta[name="twitter:description"]').attr('content') ||
-          $('meta[name="description"]').attr('content') ||
-          $('meta[name="summary"]').attr('content') ||
-          '';
-
-        let image = 
-          $('meta[property="og:image"]').attr('content') ||
-          $('meta[name="twitter:image"]').attr('content') ||
-          $('meta[name="twitter:image:src"]').attr('content') ||
-          $('link[rel="apple-touch-icon"]').attr('href') ||
-          $('link[rel="icon"]').attr('href') ||
-          null;
-
-        // 가격 추출
-        let price = 
-          $('meta[property="product:price:amount"]').attr('content') ||
-          $('meta[property="product:price"]').attr('content') ||
-          $('.price').first().text().trim() ||
-          $('.cost').first().text().trim() ||
-          $('.sale-price').first().text().trim() ||
-          $('.current-price').first().text().trim() ||
-          $('[class*="price"]').first().text().trim() ||
-          null;
-
-        // 이미지 절대 URL 변환
-        if (image && !image.startsWith('http')) {
-          try {
-            image = new URL(image, finalUrl).href;
-          } catch {
-            image = null;
-          }
-        }
-
-        console.log(`Selenium 성공: title="${title}", price="${price}"`);
-        
-        return {
-          title: title.trim().substring(0, 200) || null,
-          description: description.trim().substring(0, 300) || null,
-          image: image && image.startsWith('http') ? image : null,
-          price: price && price.trim() ? price.trim() : null,
-          domain: domain
-        };
-      } catch (seleniumError) {
-        console.log(`Selenium도 실패: ${seleniumError instanceof Error ? seleniumError.message : String(seleniumError)}`);
-      }
-      
-      throw new Error(`모든 시도 실패. HTTP ${response?.status || 'UNKNOWN'}: ${response?.statusText || 'All user agents failed'}`);
+      console.log(`모든 fetch 시도 실패: HTTP ${response?.status || 'UNKNOWN'}`);
+      throw new Error(`페이지 로드 실패. HTTP ${response?.status || 'UNKNOWN'}: ${response?.statusText || 'All user agents failed'}`);
     }
 
     const html = await response.text();
@@ -273,35 +146,8 @@ export async function fetchMetadata(url: string) {
     }
 
     
-    console.log(`meta size = ${$('meta').length}`);
-    // 모든 meta 태그 출력
-    $('meta').each((i, el) => {
-      const $el = $(el);
-      const name = $el.attr('name') || $el.attr('property') || $el.attr('http-equiv') || 'unknown';
-      const content = $el.attr('content') || '';
-      console.log(`meta[${i}]: ${name} = "${content}"`);
-    });
-    
-    // 11번가 가격 디버깅
-    if (finalDomain.includes('11st.co.kr')) {
-      console.log('=== 11번가 가격 선택자 디버깅 ===');
-      const priceSelectors = [
-        '.prc_t .prc',
-        '.sale_price',
-        '.price_real',
-        '.prd_price .price',
-        '.total_price .price',
-        '.selling_price',
-        '.current_price'
-      ];
-      
-      priceSelectors.forEach(selector => {
-        const element = $(selector).first();
-        if (element.length > 0) {
-          console.log(`${selector}: "${element.text().trim()}"`);
-        }
-      });
-    }
+    // 디버깅 정보는 필요시에만 활성화
+    // console.log(`meta size = ${$('meta').length}`);
 
 
     // Extract price information with site-specific selectors
@@ -373,8 +219,10 @@ export async function fetchMetadata(url: string) {
       $('[class*="price"]').first().text().trim() ||
       null;
 
-    // Debug: Log what price we found
-    console.log(`원본 가격 데이터 (${finalDomain}): "${price}"`);
+    // Debug: Log what price we found (11번가만)
+    if (finalDomain.includes('11st.co.kr')) {
+      console.log(`원본 가격 데이터 (${finalDomain}): "${price}"`);
+    }
 
     // If we don't have productCode yet, try to extract it
     if (!productCode && finalUrl.includes('gmarket.co.kr') && finalUrl.includes('goodscode=')) {
