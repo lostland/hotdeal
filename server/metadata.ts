@@ -125,23 +125,23 @@ export async function fetchMetadata(url: string) {
           headers: {
             'User-Agent': userAgent,
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-            'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'Referer': 'https://www.google.com/',
-            'Sec-Fetch-Dest': 'document',
-            'Sec-Fetch-Mode': 'navigate',
-            'Sec-Fetch-Site': 'cross-site',
-            'Upgrade-Insecure-Requests': '1',
-            'Cache-Control': 'max-age=0'
+            //'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+            //'Accept-Encoding': 'gzip, deflate, br',
+            //'Referer': 'https://www.google.com/',
+            //'Sec-Fetch-Dest': 'document',
+            //'Sec-Fetch-Mode': 'navigate',
+            //'Sec-Fetch-Site': 'cross-site',
+            //'Upgrade-Insecure-Requests': '1',
+            //'Cache-Control': 'max-age=0'
           },
           redirect: 'follow',
           signal: AbortSignal.timeout(5000) // Shorter timeout for faster fallback
         });
 
-        if (response.ok) {
+        //if (response.ok) {
           console.log(`성공적으로 페이지 로드: ${userAgent.slice(0, 30)}...`);
           break;
-        }
+        //}
       } catch (error) {
         lastError = error;
         console.log(`시도 실패 (${userAgent.slice(0, 30)}...):`, error instanceof Error ? error.message : String(error));
