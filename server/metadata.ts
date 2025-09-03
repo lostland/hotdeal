@@ -1,6 +1,6 @@
 import * as cheerio from "cheerio";
 import { Builder, Browser, WebDriver, By, until } from 'selenium-webdriver';
-import { Options } from 'selenium-webdriver/chrome';
+import { Options, ServiceBuilder } from 'selenium-webdriver/chrome';
 
 
 async function fetchWithSelenium(url: string) {
@@ -16,17 +16,32 @@ async function fetchWithSelenium(url: string) {
     options.addArguments('--disable-web-security');
     options.addArguments('--lang=ko-KR');
     options.addArguments('--user-agent=Mozilla/5.0 (Linux; Android 10; SM-G975F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36');
+    options.setChromeBinaryPath('/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium-browser');
+
+    console.log(`Selenium으로 페이지 로드 시도: ${url}`);
+
+    const service = new ServiceBuilder('/nix/store/3qnxr5x6gw3k9a9i7d0akz0m6bksbwff-chromedriver-125.0.6422.141/bin/chromedriver');
     
     driver = await new Builder()
       .forBrowser(Browser.CHROME)
       .setChromeOptions(options)
+      .setChromeService(service)
       .build();
+
+    console.log(`Selenium 드라이버 생성 완료`)
     
-    console.log(`Selenium으로 페이지 로드 시도: ${url}`);
-    
-    // 페이지 로드 (10초 타임아웃)
+    // 페이지 로드 및 대기 시간 추가
     await driver.get(url);
-    await driver.wait(until.titleIs(''), 1000).catch(() => {}); // 페이지 로드 대기
+    
+    // 페이지 로드 완료까지 대기 (최대 5초)
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // 제목이 로드될 때까지 대기
+    try {
+      await driver.wait(until.titleMatches(/.+/), 3000);
+    } catch {
+      // 제목 로드 실패해도 계속 진행
+    }
     
     // 페이지 소스 가져오기
     const html = await driver.getPageSource();
@@ -86,11 +101,11 @@ export async function fetchMetadata(url: string) {
 
       // Mobile user agents
       'Mozilla/5.0 (Linux; Android 10; SM-G975F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
-      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
       // Korean browser patterns (more likely to be allowed)
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0',
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+//            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0',
+  //          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+//            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
     ];
 
