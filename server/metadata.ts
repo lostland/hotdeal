@@ -1,5 +1,44 @@
 import * as cheerio from "cheerio";
+import { Builder, Browser, WebDriver, By, until } from 'selenium-webdriver';
+import { Options } from 'selenium-webdriver/chrome';
 
+
+async function fetchWithSelenium(url: string) {
+  let driver: WebDriver | null = null;
+  try {
+    // Chrome 옵션 설정
+    const options = new Options();
+    options.addArguments('--headless');
+    options.addArguments('--no-sandbox');
+    options.addArguments('--disable-dev-shm-usage');
+    options.addArguments('--disable-gpu');
+    options.addArguments('--disable-extensions');
+    options.addArguments('--disable-web-security');
+    options.addArguments('--lang=ko-KR');
+    options.addArguments('--user-agent=Mozilla/5.0 (Linux; Android 10; SM-G975F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36');
+    
+    driver = await new Builder()
+      .forBrowser(Browser.CHROME)
+      .setChromeOptions(options)
+      .build();
+    
+    console.log(`Selenium으로 페이지 로드 시도: ${url}`);
+    
+    // 페이지 로드 (10초 타임아웃)
+    await driver.get(url);
+    await driver.wait(until.titleIs(''), 1000).catch(() => {}); // 페이지 로드 대기
+    
+    // 페이지 소스 가져오기
+    const html = await driver.getPageSource();
+    console.log(`Selenium으로 성공적으로 페이지 로드 완료`);
+    
+    return html;
+  } finally {
+    if (driver) {
+      await driver.quit();
+    }
+  }
+}
 
 export async function fetchMetadata(url: string) {
   try {
@@ -96,81 +135,69 @@ export async function fetchMetadata(url: string) {
     }
 
     if (!response || !response.ok) {
-      // If all methods fail, create intelligent fallback based on URL analysis
-      if (productCode && (domain.includes('gmarket') || url.includes('link.gmarket.co.kr'))) {
-        console.log(`HTTP 에러 발생하지만 상품 코드로 fallback 생성: ${productCode}`);
+      // 일반 fetch 실패시 Selenium 시도
+      console.log(`일반 fetch 실패, Selenium으로 재시도...`);
+      try {
+        const html = await fetchWithSelenium(finalUrl);
+        const $ = cheerio.load(html);
         
-        // 모바일 버전으로 재시도
-        const mobileUrl = `https://mitem.gmarket.co.kr/Item?goodscode=${productCode}`;
-        console.log(`모바일 버전으로 재시도: ${mobileUrl}`);
-        
-        try {
-          const mobileResponse = await fetch(mobileUrl, {
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_7_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.2 Mobile/15E148 Safari/604.1',
-              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-              'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
-              'Accept-Encoding': 'gzip, deflate, br',
-              'DNT': '1',
-              'Connection': 'keep-alive',
-              'Upgrade-Insecure-Requests': '1'
-            },
-            signal: AbortSignal.timeout(15000)
-          });
-          
-          if (mobileResponse.ok) {
-            const mobileHtml = await mobileResponse.text();
-            const mobile$ = cheerio.load(mobileHtml);
-            
-            // 모바일 가격 선택자들 (확장)
-            const mobilePrice = 
-              mobile$('.item_price .price').first().text().trim() ||
-              mobile$('.price_area .price').first().text().trim() ||
-              mobile$('.prc_t').first().text().trim() ||
-              mobile$('.price_real').first().text().trim() ||
-              mobile$('.sale_price').first().text().trim() ||
-              mobile$('.discount_price').first().text().trim() ||
-              mobile$('.box_price .price').first().text().trim() ||
-              mobile$('[data-price]').attr('data-price') ||
-              mobile$('[class*="price"]').first().text().trim() ||
-              // JSON-LD 모바일에서도 시도
-              mobile$('script[type="application/ld+json"]').toArray().map(script => {
-                try {
-                  const json = JSON.parse(mobile$(script).html() || '{}');
-                  if (json['@type'] === 'Product' && json.offers && json.offers.price) {
-                    return json.offers.price + '원';
-                  }
-                  return null;
-                } catch { return null; }
-              }).find(p => p) ||
-              null;
-            
-            if (mobilePrice) {
-              console.log(`모바일에서 가격 추출 성공: ${mobilePrice}`);
-              const mobileTitle = mobile$('meta[property="og:title"]').attr('content') || mobile$('title').text() || null;
-              const mobileDescription = mobile$('meta[property="og:description"]').attr('content') || mobile$('meta[name="description"]').attr('content') || null;
-              const mobileImage = mobile$('meta[property="og:image"]').attr('content') || (productCode ? `https://gdimg.gmarket.co.kr/${productCode}/still/300` : null);
-              return {
-                title: mobileTitle,
-                description: mobileDescription,
-                image: mobileImage,
-                price: mobilePrice,
-                domain: domain.includes('gmarket') ? domain : 'item.gmarket.co.kr'
-              };
-            }
+        // 동일한 메타데이터 추출 로직 적용
+        let title = 
+          $('meta[property="og:title"]').attr('content') ||
+          $('meta[name="twitter:title"]').attr('content') ||
+          $('meta[name="title"]').attr('content') ||
+          $('title').text() ||
+          $('h1').first().text() ||
+          '';
+
+        let description = 
+          $('meta[property="og:description"]').attr('content') ||
+          $('meta[name="twitter:description"]').attr('content') ||
+          $('meta[name="description"]').attr('content') ||
+          $('meta[name="summary"]').attr('content') ||
+          '';
+
+        let image = 
+          $('meta[property="og:image"]').attr('content') ||
+          $('meta[name="twitter:image"]').attr('content') ||
+          $('meta[name="twitter:image:src"]').attr('content') ||
+          $('link[rel="apple-touch-icon"]').attr('href') ||
+          $('link[rel="icon"]').attr('href') ||
+          null;
+
+        // 가격 추출
+        let price = 
+          $('meta[property="product:price:amount"]').attr('content') ||
+          $('meta[property="product:price"]').attr('content') ||
+          $('.price').first().text().trim() ||
+          $('.cost').first().text().trim() ||
+          $('.sale-price').first().text().trim() ||
+          $('.current-price').first().text().trim() ||
+          $('[class*="price"]').first().text().trim() ||
+          null;
+
+        // 이미지 절대 URL 변환
+        if (image && !image.startsWith('http')) {
+          try {
+            image = new URL(image, finalUrl).href;
+          } catch {
+            image = null;
           }
-        } catch (mobileError) {
-          console.log(`모바일 버전도 실패: ${mobileError instanceof Error ? mobileError.message : String(mobileError)}`);
         }
+
+        console.log(`Selenium 성공: title="${title}", price="${price}"`);
         
         return {
-          title: null,
-          description: null,
-          image: productCode ? `https://gdimg.gmarket.co.kr/${productCode}/still/300` : null,
-          price: null,
-          domain: domain.includes('gmarket') ? domain : 'item.gmarket.co.kr'
+          title: title.trim().substring(0, 200) || null,
+          description: description.trim().substring(0, 300) || null,
+          image: image && image.startsWith('http') ? image : null,
+          price: price && price.trim() ? price.trim() : null,
+          domain: domain
         };
+      } catch (seleniumError) {
+        console.log(`Selenium도 실패: ${seleniumError instanceof Error ? seleniumError.message : String(seleniumError)}`);
       }
+      
       throw new Error(`모든 시도 실패. HTTP ${response?.status || 'UNKNOWN'}: ${response?.statusText || 'All user agents failed'}`);
     }
 
