@@ -6,7 +6,7 @@ import { AppHeader } from "@/components/app-header";
 import { LinkCard } from "@/components/link-card";
 import { LoadingCard } from "@/components/loading-card";
 import { ErrorCard } from "@/components/error-card";
-import { ExternalLink, Settings } from "lucide-react";
+import { ExternalLink, Settings, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Home() {
@@ -93,16 +93,51 @@ export default function Home() {
               <p className="text-sm text-muted-foreground">관리자가 링크를 추가할 때까지 기다려주세요.</p>
             </div>
           ) : (
-            // Render link cards
-            links.map((link) => (
-              <LinkCard
-                key={link.id}
-                link={link}
-                onClick={() => handleLinkClick(link.url)}
-                data-testid={`link-card-${link.id}`}
-                hideDeleteButton={true}
-              />
-            ))
+            <>
+              {/* Render link cards */}
+              {links.map((link) => (
+                <LinkCard
+                  key={link.id}
+                  link={link}
+                  onClick={() => handleLinkClick(link.url)}
+                  data-testid={`link-card-${link.id}`}
+                  hideDeleteButton={true}
+                />
+              ))}
+              
+              {/* 서비스 소개 카드 */}
+              <div className="bg-card rounded-lg shadow-sm border-2 border-slate-300 dark:border-slate-600 mb-4 overflow-hidden">
+                <div className="aspect-video overflow-hidden relative bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20">
+                  <div className="w-full h-full flex items-center justify-center">
+                    <div className="text-center">
+                      <Info className="w-12 h-12 text-blue-500 mx-auto mb-2" />
+                      <h3 className="text-lg font-bold text-blue-600 dark:text-blue-400">핫딜! 쇼핑</h3>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="p-4">
+                  <h3 className="text-base font-medium text-foreground mb-2">
+                    서비스 소개
+                  </h3>
+                  
+                  <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
+                    최신 핫딜 상품 정보를 실시간으로 제공하는 서비스입니다. 
+                    각 상품의 가격, 할인 정보, 참고사항을 한눈에 확인하고 
+                    카카오톡으로 친구들과 공유해보세요! 🛍️
+                  </p>
+                  
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-blue-500 rounded-sm flex items-center justify-center">
+                      <Info className="w-2 h-2 text-white" />
+                    </div>
+                    <span className="text-xs text-muted-foreground font-medium">
+                      실시간 업데이트 서비스
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </>
           )}
         </div>
       </main>
