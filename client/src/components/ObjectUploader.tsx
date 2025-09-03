@@ -1,10 +1,7 @@
-import { useState } from "react";
+import { useState, useRef, useCallback, forwardRef, useImperativeHandle } from "react";
 import type { ReactNode } from "react";
-import Uppy from "@uppy/core";
-import { DashboardModal } from "@uppy/react";
-import AwsS3 from "@uppy/aws-s3";
-import type { UploadResult } from "@uppy/core";
 import { Button } from "@/components/ui/button";
+import { Upload, X, Image } from "lucide-react";
 
 interface ObjectUploaderProps {
   maxNumberOfFiles?: number;
@@ -13,81 +10,234 @@ interface ObjectUploaderProps {
     method: "PUT";
     url: string;
   }>;
-  onComplete?: (
-    result: UploadResult<Record<string, unknown>, Record<string, unknown>>
-  ) => void;
+  onComplete?: (result: { successful: Array<{ uploadURL: string }> }) => void;
+  onFileSelected?: (file: File | null) => void;
   buttonClassName?: string;
   children: ReactNode;
+  showDropZone?: boolean;
 }
 
-/**
- * A file upload component that renders as a button and provides a modal interface for
- * file management.
- * 
- * Features:
- * - Renders as a customizable button that opens a file upload modal
- * - Provides a modal interface for:
- *   - File selection
- *   - File preview
- *   - Upload progress tracking
- *   - Upload status display
- * 
- * The component uses Uppy under the hood to handle all file upload functionality.
- * All file management features are automatically handled by the Uppy dashboard modal.
- * 
- * @param props - Component props
- * @param props.maxNumberOfFiles - Maximum number of files allowed to be uploaded
- *   (default: 1)
- * @param props.maxFileSize - Maximum file size in bytes (default: 10MB)
- * @param props.onGetUploadParameters - Function to get upload parameters (method and URL).
- *   Typically used to fetch a presigned URL from the backend server for direct-to-S3
- *   uploads.
- * @param props.onComplete - Callback function called when upload is complete. Typically
- *   used to make post-upload API calls to update server state and set object ACL
- *   policies.
- * @param props.buttonClassName - Optional CSS class name for the button
- * @param props.children - Content to be rendered inside the button
- */
-export function ObjectUploader({
+export interface ObjectUploaderRef {
+  uploadSelectedFile: () => Promise<{ successful: Array<{ uploadURL: string }> } | null>;
+  getSelectedFile: () => File | null;
+  clearSelectedFile: () => void;
+}
+
+export const ObjectUploader = forwardRef<ObjectUploaderRef, ObjectUploaderProps>(({
   maxNumberOfFiles = 1,
   maxFileSize = 10485760, // 10MB default
   onGetUploadParameters,
   onComplete,
+  onFileSelected,
   buttonClassName,
   children,
-}: ObjectUploaderProps) {
-  const [showModal, setShowModal] = useState(false);
-  const [uppy] = useState(() =>
-    new Uppy({
-      restrictions: {
-        maxNumberOfFiles,
-        maxFileSize,
-        allowedFileTypes: ['image/*'], // 이미지 파일만 허용
-      },
-      autoProceed: false,
-    })
-      .use(AwsS3, {
-        shouldUseMultipart: false,
-        getUploadParameters: onGetUploadParameters,
-      })
-      .on("complete", (result) => {
-        onComplete?.(result);
-        setShowModal(false);
-      })
-  );
+  showDropZone = false,
+}, ref) => {
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = useCallback((file: File) => {
+    if (file.size > maxFileSize) {
+      alert(`파일 크기가 너무 큽니다. 최대 ${Math.round(maxFileSize / 1024 / 1024)}MB까지 가능합니다.`);
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      alert('이미지 파일만 업로드 가능합니다.');
+      return;
+    }
+
+    setSelectedFile(file);
+    onFileSelected?.(file);
+  }, [maxFileSize, onFileSelected]);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      handleFileSelect(files[0]);
+    }
+  }, [handleFileSelect]);
+
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      handleFileSelect(files[0]);
+    }
+  }, [handleFileSelect]);
+
+  const handleButtonClick = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const uploadSelectedFile = useCallback(async () => {
+    if (!selectedFile) return null;
+
+    setIsUploading(true);
+    try {
+      const { url } = await onGetUploadParameters();
+      
+      const response = await fetch(url, {
+        method: 'PUT',
+        body: selectedFile,
+        headers: {
+          'Content-Type': selectedFile.type,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('업로드에 실패했습니다.');
+      }
+
+      const result = {
+        successful: [{ uploadURL: url.split('?')[0] }]
+      };
+
+      onComplete?.(result);
+      return result;
+    } catch (error) {
+      console.error('업로드 오류:', error);
+      alert('업로드에 실패했습니다.');
+      return null;
+    } finally {
+      setIsUploading(false);
+    }
+  }, [selectedFile, onGetUploadParameters, onComplete]);
+
+  const removeFile = useCallback(() => {
+    setSelectedFile(null);
+    onFileSelected?.(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, [onFileSelected]);
+
+  useImperativeHandle(ref, () => ({
+    uploadSelectedFile,
+    getSelectedFile: () => selectedFile,
+    clearSelectedFile: removeFile,
+  }), [uploadSelectedFile, selectedFile, removeFile]);
+
+  if (showDropZone) {
+    return (
+      <div className="space-y-4">
+        <div
+          className={`
+            relative border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200
+            ${isDragOver 
+              ? 'border-primary bg-primary/5 scale-105' 
+              : 'border-muted-foreground/25 hover:border-primary/50'
+            }
+            ${selectedFile ? 'bg-muted/30' : ''}
+          `}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleInputChange}
+            className="hidden"
+          />
+          
+          {selectedFile ? (
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Image className="w-4 h-4" />
+                <span className="font-medium">{selectedFile.name}</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={removeFile}
+                  className="p-1 h-auto"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                파일이 선택되었습니다. 저장 버튼을 눌러 업로드하세요.
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-4">
+              <div className={`
+                p-4 rounded-full transition-all duration-200
+                ${isDragOver ? 'bg-primary/10 scale-110' : 'bg-muted/50'}
+              `}>
+                <Upload className={`w-8 h-8 transition-colors ${isDragOver ? 'text-primary' : 'text-muted-foreground'}`} />
+              </div>
+              <div>
+                <p className="text-sm font-medium mb-1">
+                  이곳에 이미지 파일을 드래그 앤 드롭하세요
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  또는{" "}
+                  <button
+                    type="button"
+                    onClick={handleButtonClick}
+                    className="text-primary hover:underline"
+                  >
+                    파일 선택
+                  </button>
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <Button onClick={() => setShowModal(true)} className={buttonClassName}>
+    <div className="flex items-center gap-2">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleInputChange}
+        className="hidden"
+      />
+      <Button 
+        type="button"
+        onClick={handleButtonClick} 
+        className={buttonClassName}
+        disabled={isUploading}
+      >
         {children}
       </Button>
-
-      <DashboardModal
-        uppy={uppy}
-        open={showModal}
-        onRequestClose={() => setShowModal(false)}
-        proudlyDisplayPoweredByUppy={false}
-      />
+      {selectedFile && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span className="truncate max-w-32">{selectedFile.name}</span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={removeFile}
+            className="p-1 h-auto"
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
     </div>
   );
-}
+});
+
+ObjectUploader.displayName = "ObjectUploader";

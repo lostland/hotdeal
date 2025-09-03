@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,8 +8,7 @@ import { ExternalLink, Trash2, Plus, LogOut, Edit2, Save, X, Upload } from "luci
 import { type Link } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ObjectUploader } from "@/components/ObjectUploader";
-import type { UploadResult } from "@uppy/core";
+import { ObjectUploader, type ObjectUploaderRef } from "@/components/ObjectUploader";
 
 export default function Admin() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -24,6 +23,9 @@ export default function Admin() {
   const [editNote, setEditNote] = useState("");
   const [editCustomImage, setEditCustomImage] = useState("");
   const { toast } = useToast();
+  
+  const newImageUploaderRef = useRef<ObjectUploaderRef>(null);
+  const editImageUploaderRef = useRef<ObjectUploaderRef>(null);
 
   // URLs 조회
   const { data: urls = [], refetch: refetchUrls } = useQuery<string[]>({
@@ -60,13 +62,28 @@ export default function Admin() {
   // URL 추가 뮤테이션
   const addUrlMutation = useMutation({
     mutationFn: async (data: { url: string; note?: string; customImage?: string }) => {
-      const response = await apiRequest("POST", "/api/admin/urls", data);
+      // 드래그 앤 드롭된 파일이 있으면 먼저 업로드
+      const selectedFile = newImageUploaderRef.current?.getSelectedFile();
+      let customImageUrl = data.customImage;
+      
+      if (selectedFile) {
+        const uploadResult = await newImageUploaderRef.current?.uploadSelectedFile();
+        if (uploadResult?.successful?.[0]?.uploadURL) {
+          customImageUrl = uploadResult.successful[0].uploadURL;
+        }
+      }
+      
+      const response = await apiRequest("POST", "/api/admin/urls", {
+        ...data,
+        customImage: customImageUrl
+      });
       return response.json();
     },
     onSuccess: () => {
       setNewUrl("");
       setNewNote("");
       setNewCustomImage("");
+      newImageUploaderRef.current?.clearSelectedFile();
       toast({
         title: "URL 추가 완료",
         description: "새로운 URL이 성공적으로 추가되었습니다.",
@@ -86,7 +103,21 @@ export default function Admin() {
   // URL 수정 뮤테이션
   const updateUrlMutation = useMutation({
     mutationFn: async (data: { oldUrl: string; newUrl: string; note?: string; customImage?: string }) => {
-      const response = await apiRequest("PUT", "/api/admin/urls", data);
+      // 편집 중 드래그 앤 드롭된 파일이 있으면 먼저 업로드
+      const selectedFile = editImageUploaderRef.current?.getSelectedFile();
+      let customImageUrl = data.customImage;
+      
+      if (selectedFile) {
+        const uploadResult = await editImageUploaderRef.current?.uploadSelectedFile();
+        if (uploadResult?.successful?.[0]?.uploadURL) {
+          customImageUrl = uploadResult.successful[0].uploadURL;
+        }
+      }
+      
+      const response = await apiRequest("PUT", "/api/admin/urls", {
+        ...data,
+        customImage: customImageUrl
+      });
       return response.json();
     },
     onSuccess: () => {
@@ -169,6 +200,7 @@ export default function Admin() {
     setEditUrl("");
     setEditNote("");
     setEditCustomImage("");
+    editImageUploaderRef.current?.clearSelectedFile();
   };
 
   const handleSaveEdit = () => {
@@ -192,20 +224,6 @@ export default function Admin() {
     };
   };
 
-  const handleImageUploadComplete = (result: UploadResult<Record<string, unknown>, Record<string, unknown>>, isEdit = false) => {
-    if (result.successful && result.successful.length > 0) {
-      const uploadURL = result.successful[0].uploadURL as string;
-      if (isEdit) {
-        setEditCustomImage(uploadURL);
-      } else {
-        setNewCustomImage(uploadURL);
-      }
-      toast({
-        title: "이미지 업로드 완료",
-        description: "이미지가 성공적으로 업로드되었습니다.",
-      });
-    }
-  };
 
   // 로그인 페이지
   if (!isLoggedIn) {
@@ -322,31 +340,14 @@ export default function Admin() {
                 <label className="block text-sm font-medium mb-2">
                   커스텀 이미지 (선택사항)
                 </label>
-                <div className="space-y-2">
-                  <ObjectUploader
-                    onGetUploadParameters={handleGetUploadParameters}
-                    onComplete={(result) => handleImageUploadComplete(result, false)}
-                    buttonClassName="w-full"
-                  >
-                    <Upload className="w-4 h-4 mr-2" />
-                    이미지 업로드
-                  </ObjectUploader>
-                  {newCustomImage && (
-                    <div className="flex items-center gap-2 p-2 bg-muted rounded">
-                      <span className="text-sm text-muted-foreground flex-1 truncate">
-                        이미지 업로드됨
-                      </span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setNewCustomImage("")}
-                      >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
+                <ObjectUploader
+                  ref={newImageUploaderRef}
+                  onGetUploadParameters={handleGetUploadParameters}
+                  showDropZone={true}
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  이미지 업로드
+                </ObjectUploader>
               </div>
               <Button
                 type="submit"
@@ -400,31 +401,14 @@ export default function Admin() {
                         </div>
                         <div>
                           <label className="block text-sm font-medium mb-1">커스텀 이미지</label>
-                          <div className="space-y-2">
-                            <ObjectUploader
-                              onGetUploadParameters={handleGetUploadParameters}
-                              onComplete={(result) => handleImageUploadComplete(result, true)}
-                              buttonClassName="w-full"
-                            >
-                              <Upload className="w-4 h-4 mr-2" />
-                              이미지 업로드
-                            </ObjectUploader>
-                            {editCustomImage && (
-                              <div className="flex items-center gap-2 p-2 bg-muted rounded">
-                                <span className="text-sm text-muted-foreground flex-1 truncate">
-                                  이미지 업로드됨
-                                </span>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => setEditCustomImage("")}
-                                >
-                                  <X className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            )}
-                          </div>
+                          <ObjectUploader
+                            ref={editImageUploaderRef}
+                            onGetUploadParameters={handleGetUploadParameters}
+                            showDropZone={true}
+                          >
+                            <Upload className="w-4 h-4 mr-2" />
+                            이미지 업로드
+                          </ObjectUploader>
                         </div>
                         <div className="flex gap-2">
                           <Button

@@ -1,8 +1,21 @@
 {
   "urls": [
-    "https://www.11st.co.kr/products/7339388653"
+    "https://www.11st.co.kr/products/7339388653",
+    "https://smartstore.naver.com/zeniton/products/12017292999"
   ],
   "links": [
+    {
+      "id": "a49fa025-d340-4c73-b894-72896feb82e8",
+      "url": "https://smartstore.naver.com/zeniton/products/12017292999",
+      "title": "",
+      "description": "",
+      "image": "",
+      "customImage": null,
+      "domain": "smartstore.naver.com",
+      "price": null,
+      "note": "제니튼 백치약 100g 3개입 (미니치약 5개 증정) 36% 할인할인 전 가격36,000원상품 가격25,800원",
+      "createdAt": "2025-09-03T08:26:46.467Z"
+    },
     {
       "id": "3c3a63bc-1a5c-466f-9ca9-85777deebbd8",
       "url": "https://www.11st.co.kr/products/7339388653",
