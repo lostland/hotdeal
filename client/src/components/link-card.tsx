@@ -116,6 +116,15 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, cl
             </div>
           )}
           
+          {link.note && (
+            <div 
+              className="text-lg font-bold text-primary mb-2" 
+              data-testid={`text-note-${link.id}`}
+            >
+              {link.note}
+            </div>
+          )}
+          
           {link.description && (
             <p 
               className="text-sm text-muted-foreground mb-3 line-clamp-2" 

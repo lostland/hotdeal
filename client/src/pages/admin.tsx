@@ -13,6 +13,7 @@ export default function Admin() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [newUrl, setNewUrl] = useState("");
+  const [newNote, setNewNote] = useState("");
   const [loginError, setLoginError] = useState("");
   const { toast } = useToast();
 
@@ -44,12 +45,13 @@ export default function Admin() {
 
   // URL 추가 뮤테이션
   const addUrlMutation = useMutation({
-    mutationFn: async (url: string) => {
-      const response = await apiRequest("POST", "/api/admin/urls", { url });
+    mutationFn: async (data: { url: string; note?: string }) => {
+      const response = await apiRequest("POST", "/api/admin/urls", data);
       return response.json();
     },
     onSuccess: () => {
       setNewUrl("");
+      setNewNote("");
       toast({
         title: "URL 추가 완료",
         description: "새로운 URL이 성공적으로 추가되었습니다.",
@@ -94,7 +96,7 @@ export default function Admin() {
   const handleAddUrl = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUrl) return;
-    addUrlMutation.mutate(newUrl);
+    addUrlMutation.mutate({ url: newUrl, note: newNote.trim() || undefined });
   };
 
   const handleRemoveUrl = (url: string) => {
@@ -193,20 +195,39 @@ export default function Admin() {
             <CardTitle>새 URL 추가</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleAddUrl} className="flex gap-4">
-              <Input
-                type="url"
-                placeholder="https://example.com"
-                value={newUrl}
-                onChange={(e) => setNewUrl(e.target.value)}
-                className="flex-1"
-                required
-                data-testid="input-new-url"
-              />
+            <form onSubmit={handleAddUrl} className="space-y-4">
+              <div>
+                <label htmlFor="new-url" className="block text-sm font-medium mb-2">
+                  URL
+                </label>
+                <Input
+                  id="new-url"
+                  type="url"
+                  placeholder="https://example.com"
+                  value={newUrl}
+                  onChange={(e) => setNewUrl(e.target.value)}
+                  required
+                  data-testid="input-new-url"
+                />
+              </div>
+              <div>
+                <label htmlFor="new-note" className="block text-sm font-medium mb-2">
+                  참고사항 (선택사항)
+                </label>
+                <Input
+                  id="new-note"
+                  type="text"
+                  placeholder="특가, 할인정보, 기타 메모 등..."
+                  value={newNote}
+                  onChange={(e) => setNewNote(e.target.value)}
+                  data-testid="input-new-note"
+                />
+              </div>
               <Button
                 type="submit"
                 disabled={addUrlMutation.isPending}
                 data-testid="button-add-url"
+                className="w-full"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 {addUrlMutation.isPending ? "추가 중..." : "추가"}

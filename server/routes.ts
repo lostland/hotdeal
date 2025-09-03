@@ -132,13 +132,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add URL (admin only)
   app.post("/api/admin/urls", async (req, res) => {
     try {
-      const { url } = req.body;
+      const { url, note } = req.body;
       
       if (!url) {
         return res.status(400).json({ message: "URL is required" });
       }
 
-      const newLink = await fileStorage.addUrl(url);
+      const newLink = await fileStorage.addUrl(url, note);
       
       // WebSocket으로 실시간 업데이트 브로드캐스트
       if (wss) {

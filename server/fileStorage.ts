@@ -83,6 +83,7 @@ export class FileStorage {
           image: metadata.image,
           domain: metadata.domain,
           price: metadata.price,
+          note: null,
           createdAt: new Date()
         };
         this.cache.links.push(link);
@@ -98,6 +99,7 @@ export class FileStorage {
           id: randomUUID(),
           url,
           ...fallbackData,
+          note: null,
           createdAt: new Date()
         };
         this.cache.links.push(link);
@@ -164,7 +166,7 @@ export class FileStorage {
     );
   }
 
-  async addUrl(url: string): Promise<Link> {
+  async addUrl(url: string, note?: string | null): Promise<Link> {
     if (this.initPromise) {
       await this.initPromise;
       this.initPromise = null;
@@ -193,6 +195,7 @@ export class FileStorage {
         image: metadata.image,
         domain: metadata.domain,
         price: metadata.price,
+        note: null,
         createdAt: new Date()
       };
       this.cache.links.push(link);
@@ -209,6 +212,7 @@ export class FileStorage {
         id: randomUUID(),
         url,
         ...fallbackData,
+        note: note || null,
         createdAt: new Date()
       };
       this.cache.links.push(link);
