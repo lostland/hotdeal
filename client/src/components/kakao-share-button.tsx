@@ -42,7 +42,15 @@ export function KakaoShareButton({
         description
       ].filter(Boolean).join('\n\n') || "최신 핫딜 상품을 확인해보세요!";
       
-      const shareImageUrl = imageUrl || "https://cdn.011st.com/11dims/resize/600x600/quality/75/11src/product/7339388653/B.jpg?559000000";
+      // 이미지 URL을 절대 경로로 변환 (카카오톡 공유에서 상대 경로는 지원하지 않음)
+      let shareImageUrl = imageUrl;
+      if (shareImageUrl && shareImageUrl.startsWith('/')) {
+        shareImageUrl = window.location.origin + shareImageUrl;
+      }
+      if (!shareImageUrl) {
+        shareImageUrl = "https://cdn.011st.com/11dims/resize/600x600/quality/75/11src/product/7339388653/B.jpg?559000000";
+      }
+      
       const shareUrl = url || window.location.href;
 
       window.Kakao.Share.sendDefault({
