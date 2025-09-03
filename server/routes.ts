@@ -160,6 +160,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update URL (admin only)
+  app.put("/api/admin/urls", async (req, res) => {
+    try {
+      const { oldUrl, newUrl, note } = req.body;
+      
+      if (!oldUrl || !newUrl) {
+        return res.status(400).json({ message: "Old URL and new URL are required" });
+      }
+
+      const updatedLink = await fileStorage.updateUrl(oldUrl, newUrl, note);
+      
+      // WebSocket으로 실시간 업데이트 브로드캐스트
+      if (wss) {
+        wss.clients.forEach((client) => {
+          if (client.readyState === 1) { // WebSocket.OPEN
+            client.send(JSON.stringify({ type: 'linksUpdated' }));
+          }
+        });
+      }
+      
+      res.json(updatedLink);
+    } catch (error) {
+      console.error("Error updating URL:", error);
+      if (error instanceof Error) {
+        if (error.message === 'Original URL not found') {
+          res.status(404).json({ message: "Original URL not found" });
+        } else if (error.message === 'New URL already exists') {
+          res.status(400).json({ message: "New URL already exists" });
+        } else {
+          res.status(500).json({ message: "Failed to update URL" });
+        }
+      } else {
+        res.status(500).json({ message: "Failed to update URL" });
+      }
+    }
+  });
+
   // Remove URL (admin only)
   app.delete("/api/admin/urls", async (req, res) => {
     try {

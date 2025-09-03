@@ -195,7 +195,7 @@ export class FileStorage {
         image: metadata.image,
         domain: metadata.domain,
         price: metadata.price,
-        note: null,
+        note: note || null,
         createdAt: new Date()
       };
       this.cache.links.push(link);
@@ -246,6 +246,73 @@ export class FileStorage {
       this.initPromise = null;
     }
     return this.cache?.urls || [];
+  }
+
+  async updateUrl(oldUrl: string, newUrl: string, note?: string | null): Promise<Link> {
+    if (this.initPromise) {
+      await this.initPromise;
+      this.initPromise = null;
+    }
+
+    if (!this.cache) {
+      throw new Error('Storage not initialized');
+    }
+
+    // 기존 URL이 존재하는지 확인
+    const oldUrlIndex = this.cache.urls.indexOf(oldUrl);
+    if (oldUrlIndex === -1) {
+      throw new Error('Original URL not found');
+    }
+
+    // 새 URL이 다르면서 이미 존재하는지 확인
+    if (oldUrl !== newUrl && this.cache.urls.includes(newUrl)) {
+      throw new Error('New URL already exists');
+    }
+
+    // URL 업데이트
+    this.cache.urls[oldUrlIndex] = newUrl;
+
+    // 기존 링크 찾기
+    const linkIndex = this.cache.links.findIndex(link => link.url === oldUrl);
+    if (linkIndex === -1) {
+      throw new Error('Link not found');
+    }
+
+    // URL이 변경된 경우 새로운 메타데이터 가져오기
+    if (oldUrl !== newUrl) {
+      try {
+        const metadata = await fetchMetadata(newUrl);
+        this.cache.links[linkIndex] = {
+          ...this.cache.links[linkIndex],
+          url: newUrl,
+          title: metadata.title,
+          description: metadata.description,
+          image: metadata.image,
+          domain: metadata.domain,
+          price: metadata.price,
+          note: note || null
+        };
+      } catch (error) {
+        console.error(`Failed to fetch metadata for ${newUrl}:`, error);
+        // Fallback data
+        const urlObj = new URL(newUrl);
+        const domain = urlObj.hostname;
+        const fallbackData = this.getFallbackData(newUrl, domain);
+        
+        this.cache.links[linkIndex] = {
+          ...this.cache.links[linkIndex],
+          url: newUrl,
+          ...fallbackData,
+          note: note || null
+        };
+      }
+    } else {
+      // URL이 같으면 note만 업데이트
+      this.cache.links[linkIndex].note = note || null;
+    }
+
+    await this.saveToFile();
+    return this.cache.links[linkIndex];
   }
 
   async verifyAdmin(username: string, password: string): Promise<boolean> {

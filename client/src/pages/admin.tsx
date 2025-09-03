@@ -78,6 +78,30 @@ export default function Admin() {
     },
   });
 
+  // URL 수정 뮤테이션
+  const updateUrlMutation = useMutation({
+    mutationFn: async (data: { oldUrl: string; newUrl: string; note?: string }) => {
+      const response = await apiRequest("PUT", "/api/admin/urls", data);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "URL 수정 완료",
+        description: "URL이 성공적으로 수정되었습니다.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/urls"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/links"] });
+      handleCancelEdit();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "URL 수정 실패",
+        description: error.message || "URL 수정 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // URL 삭제 뮤테이션
   const removeUrlMutation = useMutation({
     mutationFn: async (url: string) => {
@@ -137,12 +161,12 @@ export default function Admin() {
   };
 
   const handleSaveEdit = () => {
-    if (editingLink) {
-      // 여기서는 URL과 note를 함께 업데이트하는 API가 필요합니다
-      // 현재는 삭제 후 재추가로 구현
-      removeUrlMutation.mutate(editingLink.url);
-      addUrlMutation.mutate({ url: editUrl, note: editNote.trim() || undefined });
-      handleCancelEdit();
+    if (editingLink && editUrl.trim()) {
+      updateUrlMutation.mutate({
+        oldUrl: editingLink.url,
+        newUrl: editUrl.trim(),
+        note: editNote.trim() || undefined
+      });
     }
   };
 
@@ -311,10 +335,10 @@ export default function Admin() {
                           <Button
                             size="sm"
                             onClick={handleSaveEdit}
-                            disabled={!editUrl.trim()}
+                            disabled={!editUrl.trim() || updateUrlMutation.isPending}
                           >
                             <Save className="w-4 h-4 mr-1" />
-                            저장
+                            {updateUrlMutation.isPending ? "저장 중..." : "저장"}
                           </Button>
                           <Button
                             variant="outline"
