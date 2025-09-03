@@ -3,6 +3,7 @@ import { ExternalLink, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
+import { KakaoShareButton } from "./kakao-share-button";
 
 interface LinkCardProps {
   link: Link;
@@ -56,6 +57,11 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, cl
     }
   };
 
+  const handleKakaoShareClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   return (
     <article 
       className={cn(
@@ -68,7 +74,7 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, cl
         <div className="aspect-video overflow-hidden relative">
           {(link.customImage || link.image) ? (
             <img 
-              src={link.customImage || link.image} 
+              src={link.customImage || link.image || ""} 
               alt={link.title || "Website preview"} 
               className="w-full h-full object-cover transition-transform duration-200 hover:scale-105"
               loading="lazy"
@@ -134,14 +140,29 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, cl
             </p>
           )}
           
-          <div className="flex items-center gap-2">
-            {getDomainIcon(link.domain || "")}
-            <span 
-              className="text-xs text-muted-foreground font-medium truncate" 
-              data-testid={`text-domain-${link.id}`}
-            >
-              {link.domain}
-            </span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {getDomainIcon(link.domain || "")}
+              <span 
+                className="text-xs text-muted-foreground font-medium truncate" 
+                data-testid={`text-domain-${link.id}`}
+              >
+                {link.domain}
+              </span>
+            </div>
+            
+            {/* 카카오 공유 버튼 */}
+            <div onClick={handleKakaoShareClick}>
+              <KakaoShareButton
+                title={link.title || `${link.domain} 상품`}
+                description={link.description || undefined}
+                imageUrl={link.customImage || link.image || undefined}
+                price={displayPrice || undefined}
+                note={link.note || undefined}
+                url={link.url}
+                data-testid={`kakao-share-${link.id}`}
+              />
+            </div>
           </div>
         </div>
       </div>

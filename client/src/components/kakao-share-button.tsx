@@ -8,9 +8,23 @@ declare global {
 
 interface KakaoShareButtonProps {
   className?: string;
+  title?: string;
+  description?: string;
+  imageUrl?: string;
+  price?: string;
+  note?: string;
+  url?: string;
 }
 
-export function KakaoShareButton({ className = "" }: KakaoShareButtonProps) {
+export function KakaoShareButton({ 
+  className = "", 
+  title, 
+  description, 
+  imageUrl, 
+  price, 
+  note, 
+  url 
+}: KakaoShareButtonProps) {
   useEffect(() => {
     // 카카오 SDK 초기화
     if (typeof window !== "undefined" && window.Kakao && !window.Kakao.isInitialized()) {
@@ -20,23 +34,34 @@ export function KakaoShareButton({ className = "" }: KakaoShareButtonProps) {
 
   const handleKakaoShare = () => {
     if (typeof window !== "undefined" && window.Kakao) {
+      // 공유할 컨텐츠 구성
+      const shareTitle = title || "핫딜! 쇼핑";
+      const shareDescription = [
+        note && `📋 ${note}`,
+        price && `💰 ${price}`,
+        description
+      ].filter(Boolean).join('\n\n') || "최신 핫딜 상품을 확인해보세요!";
+      
+      const shareImageUrl = imageUrl || "https://cdn.011st.com/11dims/resize/600x600/quality/75/11src/product/7339388653/B.jpg?559000000";
+      const shareUrl = url || window.location.href;
+
       window.Kakao.Share.sendDefault({
         objectType: "feed",
         content: {
-          title: "핫딜! 쇼핑",
-          description: "최신 핫딜 상품들을 확인해보세요! 실시간 가격 정보와 할인 정보를 제공합니다.",
-          imageUrl: "https://cdn.011st.com/11dims/resize/600x600/quality/75/11src/product/7339388653/B.jpg?559000000",
+          title: shareTitle,
+          description: shareDescription,
+          imageUrl: shareImageUrl,
           link: {
-            mobileWebUrl: window.location.href,
-            webUrl: window.location.href,
+            mobileWebUrl: shareUrl,
+            webUrl: shareUrl,
           },
         },
         buttons: [
           {
-            title: "핫딜 보러가기",
+            title: "상품 보러가기",
             link: {
-              mobileWebUrl: window.location.href,
-              webUrl: window.location.href,
+              mobileWebUrl: shareUrl,
+              webUrl: shareUrl,
             },
           },
         ],
@@ -47,13 +72,13 @@ export function KakaoShareButton({ className = "" }: KakaoShareButtonProps) {
   return (
     <button
       onClick={handleKakaoShare}
-      className={`flex items-center justify-center w-12 h-12 bg-yellow-400 hover:bg-yellow-500 rounded-full shadow-lg transition-all duration-200 hover:scale-105 ${className}`}
+      className={`flex items-center gap-1 px-2 py-1 bg-yellow-400 hover:bg-yellow-500 rounded text-xs font-medium text-black transition-all duration-200 hover:scale-105 ${className}`}
       title="카카오톡으로 공유하기"
       data-testid="kakao-share-button"
     >
       <svg
-        width="24"
-        height="24"
+        width="14"
+        height="14"
         viewBox="0 0 24 24"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
@@ -64,6 +89,7 @@ export function KakaoShareButton({ className = "" }: KakaoShareButtonProps) {
           fill="currentColor"
         />
       </svg>
+      <span>카카오 공유</span>
     </button>
   );
 }
