@@ -7,6 +7,43 @@ import { fetchMetadata } from "./metadata";
 
 let wss: WebSocketServer;
 
+// fetchMetadata 순차 처리를 위한 큐
+const metadataQueue: Array<() => Promise<any>> = [];
+let isProcessing = false;
+
+async function processMetadataQueue() {
+  if (isProcessing || metadataQueue.length === 0) return;
+  
+  isProcessing = true;
+  while (metadataQueue.length > 0) {
+    const task = metadataQueue.shift();
+    if (task) {
+      try {
+        await task();
+      } catch (error) {
+        console.error('Queue task error:', error);
+      }
+      // 요청 간 간격 추가
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+  }
+  isProcessing = false;
+}
+
+function queueMetadataRequest(url: string): Promise<any> {
+  return new Promise((resolve, reject) => {
+    metadataQueue.push(async () => {
+      try {
+        const result = await fetchMetadata(url);
+        resolve(result);
+      } catch (error) {
+        reject(error);
+      }
+    });
+    processMetadataQueue();
+  });
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get all links
   app.get("/api/links", async (req, res) => {
@@ -31,8 +68,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Link not found" });
       }
 
-      // Fetch fresh metadata to get current price
-      const metadata = await fetchMetadata(link.url);
+      // Fetch fresh metadata to get current price (순차 처리)
+      const metadata = await queueMetadataRequest(link.url);
       
       res.json({ 
         price: metadata.price,
