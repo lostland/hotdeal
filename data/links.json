@@ -1,16 +1,59 @@
 {
   "urls": [
-    "https://www.coupang.com/vp/products/8803438712?itemId=25636583454&vendorItemId=92626651629&src=8139401&spec=10999999&addtag=400&ctag=8803438712&lptag=CFM50000824&itime=20250903024635&pageType=PRODUCT&pageValue=8803438712&wPcid=17568334049684776361739&wRef=&wTime=20250903024635&redirect=landing&mcid=00e225be1b914d73a6e9afd34e2a1205&sharesource=sharebutton&style=&isshortened=Y"
+    "https://www.jnmall.kr/product/8247",
+    "https://www.jnmall.kr/product/12811",
+    "https://www.11st.co.kr/products/7339388653",
+    "https://link.coupang.com/a/cNF69X"
   ],
   "links": [
     {
-      "id": "4955fdd6-f161-4a6a-a5c5-9e9133606ecb",
-      "url": "https://www.coupang.com/vp/products/8803438712?itemId=25636583454&vendorItemId=92626651629&src=8139401&spec=10999999&addtag=400&ctag=8803438712&lptag=CFM50000824&itime=20250903024635&pageType=PRODUCT&pageValue=8803438712&wPcid=17568334049684776361739&wRef=&wTime=20250903024635&redirect=landing&mcid=00e225be1b914d73a6e9afd34e2a1205&sharesource=sharebutton&style=&isshortened=Y",
+      "id": "c528371c-813f-43d1-9ef1-d4d1328ec2e5",
+      "url": "https://link.coupang.com/a/cNF69X",
+      "title": null,
+      "description": null,
+      "image": "https://thumbnail10.coupangcdn.com/thumbnails/remote/492x492ex/image/8803438712/1.jpg",
+      "price": null,
+      "createdAt": "2025-09-02T17:47:31.302Z"
+    },
+    {
+      "id": "870c064a-ef02-4b56-a770-30ef5b5a6b40",
+      "url": "https://www.11st.co.kr/products/7339388653",
+      "title": "[11번가] [프레쉬킹] 아삭한 아오리 여름 사과 썸머킹 5kg",
+      "description": "과일>국산과일>사과, 가격 : 19,900원",
+      "image": "https://cdn.011st.com/11dims/resize/600x600/quality/75/11src/product/7339388653/B.jpg?559000000",
+      "domain": "www.11st.co.kr",
+      "price": null,
+      "createdAt": "2025-09-02T17:15:40.474Z"
+    },
+    {
+      "id": "bc7e25df-3381-47bb-9277-1a17fc9725d7",
+      "url": "https://www.jnmall.kr/product/12811",
+      "title": "(미르수산) 여름 마지막 특가★고흥 산지직송 자연산 꽃게 숫꽃게 1kg 大사이즈",
+      "description": "꽃게 1kg",
+      "image": "https://obj-g-1.ktcloud.com/product/14755_PRODUCT_c4e619bc-512e-4c86-a3db-fabacba15678",
+      "domain": "www.jnmall.kr",
+      "price": "14,900원",
+      "createdAt": "2025-09-02T17:13:42.408Z"
+    },
+    {
+      "id": "f4b9eb20-2717-4e81-bf0b-e270f6894230",
+      "url": "https://www.jnmall.kr/product/8247",
+      "title": "(더줌) 완도 산지직송 전복 8-9미 1kg",
+      "description": "223117",
+      "image": "https://obj-g-1.ktcloud.com/product/8248_PRODUCT_9292a5fa-bee8-4511-9752-263d832069c2",
+      "domain": "www.jnmall.kr",
+      "price": null,
+      "createdAt": "2025-09-02T17:03:42.138Z"
+    },
+    {
+      "id": "e0ba4c9b-5d9b-46c9-b95d-10d9a6d17d01",
+      "url": "https://link.coupang.com/a/cNF69X",
       "title": null,
       "description": null,
       "image": null,
+      "domain": "link.coupang.com",
       "price": null,
-      "createdAt": "2025-09-03T01:42:02.953Z"
+      "createdAt": "2025-09-02T17:50:53.110Z"
     }
   ]
 }
