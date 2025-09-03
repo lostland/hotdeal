@@ -1,8 +1,6 @@
 {
   "urls": [
-    "https://www.coupang.com/vp/products/8730464999?itemId=1101451283&vendorItemId=5629539790&src=1191000&spec=10999999&addtag=400&cta%EC%BF%A0%ED%8C%A1%EC%9D%84%20%EC%B6%94%EC%B2%9C%20%ED%95%A9%EB%8B%88%EB%8B%A4!%20%EC%B2%AD%EC%A0%95%EC%9B%90%20%EC%86%8C%EC%8B%9C%EC%A7%80%EB%9E%91%20%EB%96%A1%EC%9D%B4%EB%9E%91%20(%EB%83%89%EB%8F%99)%20https://link.coupang.com/a/cOl3eU/?style=kakao_existing_ui=%EC%BF%A0%ED%8C%A1%EC%9D%84%20%EC%B6%94%EC%B2%9C%20%ED%95%A9%EB%8B%88%EB%8B%A4!%20%EC%B2%AD%EC%A0%95%EC%9B%90%20%EC%86%8C%EC%8B%9C%EC%A7%80%EB%9E%91%20%EB%96%A1%EC%9D%B4%EB%9E%91%20(%EB%83%89%EB%8F%99)%20https://link.coupang.com/a/cOl3eU/?style=kakao_existing_ui8730464999&lptag=CFM34599199&itime=20250903021644&pageType=PRODUCT&pageValue=8730464999&wPcid=17568334049684776361739&wRef=&wTime=20250903021644&redirect=landing&mcid=07be826fbcf84cad8a5e39708463a4a0&sharesource=sharebutton&style=kakao_existing_ui&isshortened=Y",
-    "https://www.11st.co.kr/products/7339388653",
-    "https://www.coupang.com/vp/products/8803438712?itemId=25636583454&vendorItemId=92626651629&src=8139401&spec=10999999&addtag=400&ctag=8803438712&lptag=CFM50000824&itime=20250903024635&pageType=PRODUCT&pageValue=8803438712&wPcid=17568334049684776361739&wRef=&wTime=20250903024635&redirect=landing&mcid=00e225be1b914d73a6e9afd34e2a1205&sharesource=sharebutton&style=&isshortened=Y"
+    "https://www.11st.co.kr/products/7339388653"
   ],
   "links": [
     {
@@ -14,26 +12,6 @@
       "domain": "www.11st.co.kr",
       "price": null,
       "createdAt": "2025-09-03T02:08:29.346Z"
-    },
-    {
-      "id": "aba30f22-08ac-4809-8772-4396efde0994",
-      "url": "https://www.coupang.com/vp/products/8730464999?itemId=1101451283&vendorItemId=5629539790&src=1191000&spec=10999999&addtag=400&cta%EC%BF%A0%ED%8C%A1%EC%9D%84%20%EC%B6%94%EC%B2%9C%20%ED%95%A9%EB%8B%88%EB%8B%A4!%20%EC%B2%AD%EC%A0%95%EC%9B%90%20%EC%86%8C%EC%8B%9C%EC%A7%80%EB%9E%91%20%EB%96%A1%EC%9D%B4%EB%9E%91%20(%EB%83%89%EB%8F%99)%20https://link.coupang.com/a/cOl3eU/?style=kakao_existing_ui=%EC%BF%A0%ED%8C%A1%EC%9D%84%20%EC%B6%94%EC%B2%9C%20%ED%95%A9%EB%8B%88%EB%8B%A4!%20%EC%B2%AD%EC%A0%95%EC%9B%90%20%EC%86%8C%EC%8B%9C%EC%A7%80%EB%9E%91%20%EB%96%A1%EC%9D%B4%EB%9E%91%20(%EB%83%89%EB%8F%99)%20https://link.coupang.com/a/cOl3eU/?style=kakao_existing_ui8730464999&lptag=CFM34599199&itime=20250903021644&pageType=PRODUCT&pageValue=8730464999&wPcid=17568334049684776361739&wRef=&wTime=20250903021644&redirect=landing&mcid=07be826fbcf84cad8a5e39708463a4a0&sharesource=sharebutton&style=kakao_existing_ui&isshortened=Y",
-      "title": null,
-      "description": null,
-      "image": null,
-      "domain": "www.coupang.com",
-      "price": null,
-      "createdAt": "2025-09-03T01:50:22.686Z"
-    },
-    {
-      "id": "b429fa63-a8a3-42a1-82ed-786738ea3ff4",
-      "url": "https://www.coupang.com/vp/products/8803438712?itemId=25636583454&vendorItemId=92626651629&src=8139401&spec=10999999&addtag=400&ctag=8803438712&lptag=CFM50000824&itime=20250903024635&pageType=PRODUCT&pageValue=8803438712&wPcid=17568334049684776361739&wRef=&wTime=20250903024635&redirect=landing&mcid=00e225be1b914d73a6e9afd34e2a1205&sharesource=sharebutton&style=&isshortened=Y",
-      "title": null,
-      "description": null,
-      "image": null,
-      "domain": "www.coupang.com",
-      "price": null,
-      "createdAt": "2025-09-03T02:10:26.775Z"
     }
   ]
 }
