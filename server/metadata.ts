@@ -6,7 +6,7 @@ import { Options, ServiceBuilder } from 'selenium-webdriver/chrome';
 async function fetchWithSelenium(url: string) {
   let driver: WebDriver | null = null;
   try {
-    // Chrome 옵션 설정
+    // Chrome 옵션 설정 (더 사실적인 브라우저 시뮬레이션)
     const options = new Options();
     options.addArguments('--headless');
     options.addArguments('--no-sandbox');
@@ -14,8 +14,11 @@ async function fetchWithSelenium(url: string) {
     options.addArguments('--disable-gpu');
     options.addArguments('--disable-extensions');
     options.addArguments('--disable-web-security');
+    options.addArguments('--disable-blink-features=AutomationControlled');
     options.addArguments('--lang=ko-KR');
-    options.addArguments('--user-agent=Mozilla/5.0 (Linux; Android 10; SM-G975F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36');
+    options.addArguments('--window-size=1920,1080');
+    options.addArguments('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+    options.addArguments('--accept-lang=ko-KR,ko;q=0.9,en;q=0.8');
     options.setChromeBinaryPath('/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium-browser');
 
     console.log(`Selenium으로 페이지 로드 시도: ${url}`);
@@ -33,14 +36,23 @@ async function fetchWithSelenium(url: string) {
     // 페이지 로드 및 대기 시간 추가
     await driver.get(url);
     
-    // 페이지 로드 완료까지 대기 (최대 5초)
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // 초기 대기 (Cloudflare 보호 페이지 우회)
+    await new Promise(resolve => setTimeout(resolve, 3000));
     
-    // 제목이 로드될 때까지 대기
+    // "Just a moment" 페이지인지 확인하고 추가 대기
+    let currentTitle = await driver.getTitle();
+    if (currentTitle.includes("Just a moment") || currentTitle.includes("Please wait")) {
+      console.log("Cloudflare 보호 페이지 감지, 추가 대기 중...");
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      currentTitle = await driver.getTitle();
+    }
+    
+    // 제목이 로드될 때까지 대기 (최대 10초)
     try {
-      await driver.wait(until.titleMatches(/.+/), 3000);
+      await driver.wait(until.titleMatches(/^(?!Just a moment|Please wait).+/), 10000);
     } catch {
       // 제목 로드 실패해도 계속 진행
+      console.log("제목 대기 실패, 현재 제목:", currentTitle);
     }
     
     // 페이지 소스 가져오기
@@ -100,14 +112,13 @@ export async function fetchMetadata(url: string) {
     const approaches = [
 
       // Mobile user agents
-      'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
-
+      //'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
       'Mozilla/5.0 (Linux; Android 10; SM-G975F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
-      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
       // Korean browser patterns (more likely to be allowed)
-//            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0',
-  //          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
-//            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 
     ];
 
@@ -128,13 +139,13 @@ export async function fetchMetadata(url: string) {
             'User-Agent': userAgent,
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
             'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
-            //'Accept-Encoding': 'gzip, deflate, br',
-            //'Referer': 'https://www.google.com/',
-            //'Sec-Fetch-Dest': 'document',
-            //'Sec-Fetch-Mode': 'navigate',
-            //'Sec-Fetch-Site': 'cross-site',
-            //'Upgrade-Insecure-Requests': '1',
-            //'Cache-Control': 'max-age=0'
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Referer': 'https://www.google.com/',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'cross-site',
+            'Upgrade-Insecure-Requests': '1',
+            'Cache-Control': 'max-age=0'
           },
           redirect: 'follow',
           signal: AbortSignal.timeout(5000) // Shorter timeout for faster fallback
@@ -297,9 +308,23 @@ export async function fetchMetadata(url: string) {
     let price = 
       $('meta[property="product:price:amount"]').attr('content') ||
       $('meta[property="product:price"]').attr('content') ||
-      // 11번가 specific price selectors (더 정확한 선택자들)
+      // 11번가: 먼저 메타데이터에서 가격 추출
       (finalDomain.includes('11st.co.kr') ? (
-        // 메인 가격 요소들 먼저 시도
+        // 메타 태그에서 가격 추출 (가장 신뢰도 높음)
+        (() => {
+          const ogDesc = $('meta[property="og:description"]').attr('content') || '';
+          const desc = $('meta[name="description"]').attr('content') || '';
+          
+          // "가격 : 19,900원" 형식에서 추출
+          let priceFromMeta = ogDesc.match(/가격\s*:\s*([0-9,]+원)/)?.[1] ||
+                            desc.match(/가격\s*:\s*([0-9,]+원)/)?.[1] ||
+                            ogDesc.match(/할인모음가:\s*([0-9,]+원)/)?.[1] ||
+                            desc.match(/할인모음가:\s*([0-9,]+원)/)?.[1];
+                            
+          console.log(`11번가 메타데이터에서 가격 추출: "${priceFromMeta}"`);
+          return priceFromMeta;
+        })() ||
+        // 메타데이터 추출 실패시 DOM에서 시도
         $('.prc_t .prc').first().text().trim() ||
         $('.sale_price').first().text().trim() ||
         $('.price_real').first().text().trim() ||
@@ -307,16 +332,9 @@ export async function fetchMetadata(url: string) {
         $('.total_price .price').first().text().trim() ||
         $('.selling_price').first().text().trim() ||
         $('.current_price').first().text().trim() ||
-        // 더 구체적인 11번가 선택자들
         $('.prc_price').first().text().trim() ||
         $('.c_prd_price .sale').first().text().trim() ||
         $('.price_innfo .sale_price').first().text().trim() ||
-        $('.prd_price_info .sale_price').first().text().trim() ||
-        $('.price_area .sale_price').first().text().trim() ||
-        $('.prd_price .price_sale').first().text().trim() ||
-        $('.sellprice').first().text().trim() ||
-        $('[data-log-actionid-label="price"]').first().text().trim() ||
-        // 가격 정보가 담긴 특정 요소들만 선택 (포괄적인 선택자 제거)
         $('.price_wrap .price').first().text().trim() ||
         $('.price_info .sale_price').first().text().trim() ||
         null
