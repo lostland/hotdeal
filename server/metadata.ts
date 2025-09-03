@@ -65,14 +65,14 @@ export async function fetchMetadata(url: string) {
           headers: {
             'User-Agent': userAgent,
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-            'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'Referer': 'https://www.google.com/',
-            'Sec-Fetch-Dest': 'document',
-            'Sec-Fetch-Mode': 'navigate',
-            'Sec-Fetch-Site': 'cross-site',
-            'Upgrade-Insecure-Requests': '1',
-            'Cache-Control': 'max-age=0'
+            //'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+            //'Accept-Encoding': 'gzip, deflate, br',
+            //'Referer': 'https://www.google.com/',
+            //'Sec-Fetch-Dest': 'document',
+            //'Sec-Fetch-Mode': 'navigate',
+            //'Sec-Fetch-Site': 'cross-site',
+            //'Upgrade-Insecure-Requests': '1',
+            //'Cache-Control': 'max-age=0'
           },
           redirect: 'follow',
           signal: AbortSignal.timeout(5000) // Shorter timeout for faster fallback
@@ -207,8 +207,16 @@ export async function fetchMetadata(url: string) {
       }
     }
 
+    /*
     console.log(`meta size = ${$('meta').length}`);
-    // 이부분    
+    // 모든 meta 태그 출력
+    $('meta').each((i, el) => {
+      const $el = $(el);
+      const name = $el.attr('name') || $el.attr('property') || $el.attr('http-equiv') || 'unknown';
+      const content = $el.attr('content') || '';
+      console.log(`meta[${i}]: ${name} = "${content}"`);
+    });
+    */
 
 
     // Extract price information with site-specific selectors
