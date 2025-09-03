@@ -4,6 +4,7 @@ import { WebSocketServer } from 'ws';
 import { fileStorage } from "./fileStorage";
 import { insertLinkSchema } from "@shared/schema";
 import { fetchMetadata } from "./metadata";
+import { ObjectStorageService } from "./objectStorage";
 
 let wss: WebSocketServer;
 
@@ -129,16 +130,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get upload URL for object entity
+  app.post("/api/objects/upload", async (req, res) => {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      res.json({ uploadURL });
+    } catch (error) {
+      console.error("Error getting upload URL:", error);
+      res.status(500).json({ message: "Failed to get upload URL" });
+    }
+  });
+
   // Add URL (admin only)
   app.post("/api/admin/urls", async (req, res) => {
     try {
-      const { url, note } = req.body;
+      const { url, note, customImage } = req.body;
       
       if (!url) {
         return res.status(400).json({ message: "URL is required" });
       }
 
-      const newLink = await fileStorage.addUrl(url, note);
+      const newLink = await fileStorage.addUrl(url, note, customImage);
       
       // WebSocket으로 실시간 업데이트 브로드캐스트
       if (wss) {
@@ -163,13 +176,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update URL (admin only)
   app.put("/api/admin/urls", async (req, res) => {
     try {
-      const { oldUrl, newUrl, note } = req.body;
+      const { oldUrl, newUrl, note, customImage } = req.body;
       
       if (!oldUrl || !newUrl) {
         return res.status(400).json({ message: "Old URL and new URL are required" });
       }
 
-      const updatedLink = await fileStorage.updateUrl(oldUrl, newUrl, note);
+      const updatedLink = await fileStorage.updateUrl(oldUrl, newUrl, note, customImage);
       
       // WebSocket으로 실시간 업데이트 브로드캐스트
       if (wss) {

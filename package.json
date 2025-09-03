@@ -11,6 +11,7 @@
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
+    "@google-cloud/storage": "^7.17.0",
     "@hookform/resolvers": "^3.10.0",
     "@jridgewell/trace-mapping": "^0.3.25",
     "@neondatabase/serverless": "^0.10.4",
@@ -44,6 +45,10 @@
     "@tanstack/react-query": "^5.60.5",
     "@types/bcrypt": "^6.0.0",
     "@types/selenium-webdriver": "^4.1.28",
+    "@uppy/aws-s3": "^5.0.0",
+    "@uppy/core": "^5.0.1",
+    "@uppy/dashboard": "^5.0.1",
+    "@uppy/react": "^5.0.2",
     "bcrypt": "^6.0.0",
     "cheerio": "^1.1.2",
     "class-variance-authority": "^0.7.1",

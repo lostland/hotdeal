@@ -66,9 +66,9 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, cl
     >
       <div onClick={handleCardClick} className="block">
         <div className="aspect-video overflow-hidden relative">
-          {link.image ? (
+          {(link.customImage || link.image) ? (
             <img 
-              src={link.image} 
+              src={link.customImage || link.image} 
               alt={link.title || "Website preview"} 
               className="w-full h-full object-cover transition-transform duration-200 hover:scale-105"
               loading="lazy"

@@ -15,6 +15,7 @@ export const links = pgTable("links", {
   title: text("title"),
   description: text("description"),
   image: text("image"),
+  customImage: text("custom_image"), // 관리자가 업로드한 커스텀 이미지
   domain: text("domain"),
   price: text("price"),
   note: text("note"),
@@ -31,6 +32,7 @@ export const insertLinkSchema = createInsertSchema(links).pick({
   title: true,
   description: true,
   image: true,
+  customImage: true,
   domain: true,
   price: true,
   note: true,

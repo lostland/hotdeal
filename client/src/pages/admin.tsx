@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ExternalLink, Trash2, Plus, LogOut, Edit2, Save, X } from "lucide-react";
+import { ExternalLink, Trash2, Plus, LogOut, Edit2, Save, X, Upload } from "lucide-react";
 import { type Link } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { ObjectUploader } from "@/components/ObjectUploader";
+import type { UploadResult } from "@uppy/core";
 
 export default function Admin() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -15,10 +17,12 @@ export default function Admin() {
   const [password, setPassword] = useState("");
   const [newUrl, setNewUrl] = useState("");
   const [newNote, setNewNote] = useState("");
+  const [newCustomImage, setNewCustomImage] = useState("");
   const [loginError, setLoginError] = useState("");
   const [editingLink, setEditingLink] = useState<Link | null>(null);
   const [editUrl, setEditUrl] = useState("");
   const [editNote, setEditNote] = useState("");
+  const [editCustomImage, setEditCustomImage] = useState("");
   const { toast } = useToast();
 
   // URLs 조회
@@ -55,13 +59,14 @@ export default function Admin() {
 
   // URL 추가 뮤테이션
   const addUrlMutation = useMutation({
-    mutationFn: async (data: { url: string; note?: string }) => {
+    mutationFn: async (data: { url: string; note?: string; customImage?: string }) => {
       const response = await apiRequest("POST", "/api/admin/urls", data);
       return response.json();
     },
     onSuccess: () => {
       setNewUrl("");
       setNewNote("");
+      setNewCustomImage("");
       toast({
         title: "URL 추가 완료",
         description: "새로운 URL이 성공적으로 추가되었습니다.",
@@ -80,7 +85,7 @@ export default function Admin() {
 
   // URL 수정 뮤테이션
   const updateUrlMutation = useMutation({
-    mutationFn: async (data: { oldUrl: string; newUrl: string; note?: string }) => {
+    mutationFn: async (data: { oldUrl: string; newUrl: string; note?: string; customImage?: string }) => {
       const response = await apiRequest("PUT", "/api/admin/urls", data);
       return response.json();
     },
@@ -132,7 +137,11 @@ export default function Admin() {
   const handleAddUrl = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUrl) return;
-    addUrlMutation.mutate({ url: newUrl, note: newNote.trim() || undefined });
+    addUrlMutation.mutate({ 
+      url: newUrl, 
+      note: newNote.trim() || undefined,
+      customImage: newCustomImage.trim() || undefined
+    });
   };
 
   const handleRemoveUrl = (url: string) => {
@@ -152,12 +161,14 @@ export default function Admin() {
     setEditingLink(link);
     setEditUrl(link.url);
     setEditNote(link.note || "");
+    setEditCustomImage(link.customImage || "");
   };
 
   const handleCancelEdit = () => {
     setEditingLink(null);
     setEditUrl("");
     setEditNote("");
+    setEditCustomImage("");
   };
 
   const handleSaveEdit = () => {
@@ -165,7 +176,33 @@ export default function Admin() {
       updateUrlMutation.mutate({
         oldUrl: editingLink.url,
         newUrl: editUrl.trim(),
-        note: editNote.trim() || undefined
+        note: editNote.trim() || undefined,
+        customImage: editCustomImage.trim() || undefined
+      });
+    }
+  };
+
+  // 이미지 업로드 핸들러
+  const handleGetUploadParameters = async () => {
+    const response = await apiRequest("POST", "/api/objects/upload");
+    const data = await response.json();
+    return {
+      method: "PUT" as const,
+      url: data.uploadURL,
+    };
+  };
+
+  const handleImageUploadComplete = (result: UploadResult<Record<string, unknown>, Record<string, unknown>>, isEdit = false) => {
+    if (result.successful && result.successful.length > 0) {
+      const uploadURL = result.successful[0].uploadURL as string;
+      if (isEdit) {
+        setEditCustomImage(uploadURL);
+      } else {
+        setNewCustomImage(uploadURL);
+      }
+      toast({
+        title: "이미지 업로드 완료",
+        description: "이미지가 성공적으로 업로드되었습니다.",
       });
     }
   };
@@ -281,6 +318,36 @@ export default function Admin() {
                   data-testid="input-new-note"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  커스텀 이미지 (선택사항)
+                </label>
+                <div className="space-y-2">
+                  <ObjectUploader
+                    onGetUploadParameters={handleGetUploadParameters}
+                    onComplete={(result) => handleImageUploadComplete(result, false)}
+                    buttonClassName="w-full"
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    이미지 업로드
+                  </ObjectUploader>
+                  {newCustomImage && (
+                    <div className="flex items-center gap-2 p-2 bg-muted rounded">
+                      <span className="text-sm text-muted-foreground flex-1 truncate">
+                        이미지 업로드됨
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setNewCustomImage("")}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
               <Button
                 type="submit"
                 disabled={addUrlMutation.isPending}
@@ -330,6 +397,34 @@ export default function Admin() {
                             onChange={(e) => setEditNote(e.target.value)}
                             placeholder="특가, 할인정보, 기타 메모 등..."
                           />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">커스텀 이미지</label>
+                          <div className="space-y-2">
+                            <ObjectUploader
+                              onGetUploadParameters={handleGetUploadParameters}
+                              onComplete={(result) => handleImageUploadComplete(result, true)}
+                              buttonClassName="w-full"
+                            >
+                              <Upload className="w-4 h-4 mr-2" />
+                              이미지 업로드
+                            </ObjectUploader>
+                            {editCustomImage && (
+                              <div className="flex items-center gap-2 p-2 bg-muted rounded">
+                                <span className="text-sm text-muted-foreground flex-1 truncate">
+                                  이미지 업로드됨
+                                </span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setEditCustomImage("")}
+                                >
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                         <div className="flex gap-2">
                           <Button
@@ -394,6 +489,11 @@ export default function Admin() {
                         {link.title && (
                           <div className="text-sm text-muted-foreground">
                             <strong>제목:</strong> {link.title}
+                          </div>
+                        )}
+                        {link.customImage && (
+                          <div className="text-sm text-muted-foreground">
+                            <strong>커스텀 이미지:</strong> 설정됨
                           </div>
                         )}
                       </div>

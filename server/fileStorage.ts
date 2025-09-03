@@ -81,6 +81,7 @@ export class FileStorage {
           title: metadata.title,
           description: metadata.description,
           image: metadata.image,
+          customImage: null,
           domain: metadata.domain,
           price: metadata.price,
           note: null,
@@ -99,6 +100,7 @@ export class FileStorage {
           id: randomUUID(),
           url,
           ...fallbackData,
+          customImage: null,
           note: null,
           createdAt: new Date()
         };
@@ -166,7 +168,7 @@ export class FileStorage {
     );
   }
 
-  async addUrl(url: string, note?: string | null): Promise<Link> {
+  async addUrl(url: string, note?: string | null, customImage?: string | null): Promise<Link> {
     if (this.initPromise) {
       await this.initPromise;
       this.initPromise = null;
@@ -193,6 +195,7 @@ export class FileStorage {
         title: metadata.title,
         description: metadata.description,
         image: metadata.image,
+        customImage: customImage || null,
         domain: metadata.domain,
         price: metadata.price,
         note: note || null,
@@ -212,6 +215,7 @@ export class FileStorage {
         id: randomUUID(),
         url,
         ...fallbackData,
+        customImage: customImage || null,
         note: note || null,
         createdAt: new Date()
       };
@@ -248,7 +252,7 @@ export class FileStorage {
     return this.cache?.urls || [];
   }
 
-  async updateUrl(oldUrl: string, newUrl: string, note?: string | null): Promise<Link> {
+  async updateUrl(oldUrl: string, newUrl: string, note?: string | null, customImage?: string | null): Promise<Link> {
     if (this.initPromise) {
       await this.initPromise;
       this.initPromise = null;
@@ -288,6 +292,7 @@ export class FileStorage {
           title: metadata.title,
           description: metadata.description,
           image: metadata.image,
+          customImage: customImage || null,
           domain: metadata.domain,
           price: metadata.price,
           note: note || null
@@ -303,12 +308,14 @@ export class FileStorage {
           ...this.cache.links[linkIndex],
           url: newUrl,
           ...fallbackData,
+          customImage: customImage || null,
           note: note || null
         };
       }
     } else {
-      // URL이 같으면 note만 업데이트
+      // URL이 같으면 note와 customImage만 업데이트
       this.cache.links[linkIndex].note = note || null;
+      this.cache.links[linkIndex].customImage = customImage || null;
     }
 
     await this.saveToFile();
