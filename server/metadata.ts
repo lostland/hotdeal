@@ -208,12 +208,7 @@ export async function fetchMetadata(url: string) {
     }
 
     console.log(`meta size = ${$('meta').length}`);
-    // 이부분
-    console.log('📝 추출된 메타데이터:');
-    console.log(`제목: "${title}"`);
-    console.log(`설명: "${description}"`);
-    console.log(`이미지: "${image}"`);
-    console.log(`도메인: "${finalDomain}"`);    
+    // 이부분    
 
 
     // Extract price information with site-specific selectors
