@@ -1,5 +1,62 @@
 import * as cheerio from "cheerio";
 
+// 쿠팡 전용 메타데이터 추출 함수
+async function extractCoupangMetadata(url: string) {
+  try {
+    // 개선된 User-Agent로 쿠팡 접근
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'ko-KR,ko;q=0.9,en;q=0.8',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Cache-Control': 'max-age=0',
+      },
+      signal: AbortSignal.timeout(30000)
+    });
+
+    if (response.ok) {
+      const html = await response.text();
+      const $ = cheerio.load(html);
+      
+      // 제품명 추출
+      const title = $('meta[property="og:title"]').attr('content') ||
+                   $('title').text() ||
+                   $('.prod-buy-header__title').text().trim() ||
+                   $('.product-title').text().trim();
+      
+      // 설명 추출
+      const description = $('meta[property="og:description"]').attr('content') ||
+                         $('meta[name="description"]').attr('content') ||
+                         $('.prod-buy-header__spec-list').text().trim();
+      
+      // 이미지 추출
+      const image = $('meta[property="og:image"]').attr('content') ||
+                   $('.prod-image__detail img').first().attr('src') ||
+                   $('.product-image img').first().attr('src');
+      
+      console.log(`쿠팡 메타데이터 추출 성공: ${title ? '제목 O' : '제목 X'}, ${description ? '설명 O' : '설명 X'}, ${image ? '이미지 O' : '이미지 X'}`);
+      
+      return {
+        title: title || null,
+        description: description || null,
+        image: image || null,
+        price: null // 가격은 별도 API에서 처리
+      };
+    } else {
+      console.log(`쿠팡 접근 실패: ${response.status} ${response.statusText}`);
+      return { title: null, description: null, image: null, price: null };
+    }
+  } catch (error) {
+    console.log('쿠팡 메타데이터 추출 오류:', error instanceof Error ? error.message : String(error));
+    return { title: null, description: null, image: null, price: null };
+  }
+}
 
 export async function fetchMetadata(url: string) {
   try {
@@ -12,6 +69,38 @@ export async function fetchMetadata(url: string) {
     const domain = urlObj.hostname;
     
     
+    // 쿠팡 URL 처리 (User-Agent 수정으로 접근 가능)
+    if (url.includes('link.coupang.com') || domain.includes('coupang.com')) {
+      console.log(`쿠팡 URL 감지: ${url}`);
+      
+      // 쿠팡 리디렉트 URL을 실제 URL로 변환
+      if (url.includes('link.coupang.com')) {
+        try {
+          console.log(`쿠팡 리디렉트 URL 처리: ${url}`);
+          const redirectResponse = await fetch(url, {
+            method: 'HEAD',
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Linux; Android 10; SM-G973F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.120 Mobile Safari/537.36',
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+              'Accept-Language': 'ko-KR,ko;q=0.9',
+            },
+            redirect: 'follow'
+          });
+          
+          if (redirectResponse.url && redirectResponse.url !== url) {
+            finalUrl = redirectResponse.url;
+            console.log(`쿠팡 리디렉트: ${url} -> ${finalUrl}`);
+          }
+        } catch (redirectError) {
+          console.log('쿠팡 리디렉트 실패:', redirectError instanceof Error ? redirectError.message : String(redirectError));
+        }
+      }
+      
+      // 쿠팡 메타데이터 추출 시도
+      const coupangResult = await extractCoupangMetadata(finalUrl);
+      return coupangResult;
+    }
+
     // For G마켓 redirect links, try to get the actual product URL first
     if (url.includes('link.gmarket.co.kr')) {
       try {
@@ -45,13 +134,15 @@ export async function fetchMetadata(url: string) {
     // Try multiple approaches to fetch data
     const approaches = [
       // Korean browser patterns (more likely to be allowed)
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0',
-      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
-      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+ //     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0',
+//      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+//      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       // Mobile user agents
-      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
-      'Mozilla/5.0 (Linux; Android 10; SM-G975F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36'
-    ];
+
+      'Mozilla/5.0 (Linux; Android 10; SM-G975F) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
+    
+      ];
 
     let response = null;
     let lastError = null;
@@ -312,11 +403,16 @@ export async function fetchMetadata(url: string) {
         /이미지\s*수/,        // "이미지 수" 
         /리뷰\s*보기/,        // "리뷰 보기"
         /^[\s\-\+\=]+$/,      // Only symbols/spaces
-        /^[가-힣\s]*\d+[가-힣\s]*$/,  // Korean text with numbers but no currency
+        /^[가-힣\s]*\d+[가-힣\s]*$/,  // Korean text with numbers but no currency (exclude if contains "원")
       ];
       
       const isInvalidPrice = invalidPricePatterns.some(pattern => {
-        const matches = pattern.test(price?.trim() || '');
+        const trimmedPrice = price?.trim() || '';
+        // "원"이 포함된 경우 Korean text + numbers 패턴은 제외
+        if (pattern.toString().includes('[가-힣\\s]*\\d+[가-힣\\s]*') && trimmedPrice.includes('원')) {
+          return false;
+        }
+        const matches = pattern.test(trimmedPrice);
         if (matches) {
           console.log(`패턴 "${pattern}" 매칭됨: "${price}"`);
         }
