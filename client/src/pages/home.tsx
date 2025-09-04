@@ -109,7 +109,164 @@ export default function Home() {
             </>
           )}
 
+          {/* ───────────────── 서비스 소개 ───────────────── */}
+          <div className="rounded-2xl overflow-hidden shadow-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 mb-4">
+            <div className="bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 p-3">
+              <h3 className="text-sm font-semibold text-blue-700 dark:text-blue-300">핫딜! 쇼핑 안내</h3>
+            </div>
+            <div className="p-4">
+              <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
+                이 페이지는 여러 쇼핑몰에 흩어진 <strong>실시간 특가</strong>를 한눈에 모아 보여줍니다.
+                각 카드에서 가격·옵션·간단 코멘트를 확인하고, 필요 시 <strong>공유</strong> 버튼으로 친구에게 바로 보내보세요.
+              </p>
+              <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
+                <li>매일 바뀌는 타임세일/한정수량 위주로 업데이트</li>
+                <li>생활·식품·가전·패션·여행 등 카테고리별 큐레이션</li>
+                <li>카드/포인트/쿠폰 조합까지 고려한 <strong>체감가</strong> 안내</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* ───────────────── 이용 방법 ───────────────── */}
+          <div className="rounded-2xl overflow-hidden shadow-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 mb-4">
+            <div className="bg-gradient-to-r from-emerald-100 to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30 p-3">
+              <h3 className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">이용 방법</h3>
+            </div>
+            <div className="p-4">
+              <ol className="list-decimal pl-5 space-y-2 text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
+                <li>관심 상품 카드를 눌러 <strong>상세 정보</strong>를 확인합니다.</li>
+                <li>가격, 옵션, 배송비와 적용 가능한 <strong>쿠폰</strong>을 체크합니다.</li>
+                <li>“구매하러 가기”로 <strong>공식 판매처</strong>에 이동합니다.</li>
+                <li>결제 직전에 <strong>최종 결제 금액</strong>과 재고/배송일을 다시 확인하세요.</li>
+              </ol>
+              <p className="mt-3 text-xs text-slate-500">
+                * 인앱 브라우저에서 결제가 원활하지 않으면 우측 상단 메뉴에서 <strong>브라우저로 열기(Chrome/Safari)</strong>를 사용하세요.
+              </p>
+            </div>
+          </div>
+
+          {/* ───────────────── 가격 변동/품절 주의 ───────────────── */}
+          <div className="rounded-2xl overflow-hidden shadow-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 mb-4">
+            <div className="bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 p-3">
+              <h3 className="text-sm font-semibold text-amber-700 dark:text-amber-300">가격 변동 & 품절 주의</h3>
+            </div>
+            <div className="p-4">
+              <ul className="space-y-2 text-sm text-slate-700 dark:text-slate-200">
+                <li>핫딜은 노출 후 <strong>짧은 시간 내</strong> 가격이 바뀌거나 품절될 수 있습니다.</li>
+                <li>쿠폰/포인트는 <strong>계정·시간대·앱 환경</strong>에 따라 적용 기준이 다를 수 있습니다.</li>
+                <li>동일 상품이라도 <strong>옵션/판매자</strong>에 따라 배송비와 체감가가 달라질 수 있어요.</li>
+              </ul>
+              <p className="mt-3 text-xs text-slate-500">
+                팁: 장바구니 담은 뒤 결제 단계에서 총액·쿠폰 적용 여부·배송일을 최종 확인하세요.
+              </p>
+            </div>
+          </div>
+
+          {/* ───────────────── 핫딜 쇼핑 가이드 ───────────────── */}
+          <div className="rounded-2xl overflow-hidden shadow-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 mb-4">
+            <div className="bg-gradient-to-r from-indigo-100 to-violet-100 dark:from-indigo-900/30 dark:to-violet-900/30 p-3">
+              <h3 className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">핫딜 쇼핑 가이드</h3>
+            </div>
+            <div className="p-4">
+              <ul className="list-disc pl-5 space-y-2 text-sm text-slate-700 dark:text-slate-200">
+                <li>
+                  <a href="/post/how-to-find-real-deals" className="text-blue-600 dark:text-blue-400 hover:underline">
+                    진짜 핫딜 vs 가짜 할인 구분법
+                  </a>
+                </li>
+                <li>
+                  <a href="/post/black-friday-guide" className="text-blue-600 dark:text-blue-400 hover:underline">
+                    블랙프라이데이 똑똑하게 쇼핑하는 방법
+                  </a>
+                </li>
+                <li>
+                  <a href="/post/credit-card-benefits" className="text-blue-600 dark:text-blue-400 hover:underline">
+                    신용카드 혜택과 핫딜을 함께 활용하기
+                  </a>
+                </li>
+                <li>
+                  <a href="/post/travel-hotdeals" className="text-blue-600 dark:text-blue-400 hover:underline">
+                    여행 상품 핫딜, 놓치지 않고 잡는 꿀팁
+                  </a>
+                </li>
+              </ul>
+              <p className="mt-4 text-xs text-slate-500">
+                이런 블로그성 글을 꾸준히 업데이트하면 방문자가 오래 머물고, 검색 노출과 AdSense 심사에도 긍정적입니다.
+              </p>
+            </div>
+          </div>
           
+
+          {/* ───────────────── 똑똑한 구매 팁 ───────────────── */}
+          <div className="rounded-2xl overflow-hidden shadow-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 mb-4">
+            <div className="bg-gradient-to-r from-rose-100 to-pink-100 dark:from-rose-900/30 dark:to-pink-900/30 p-3">
+              <h3 className="text-sm font-semibold text-rose-700 dark:text-rose-300">똑똑한 구매 팁</h3>
+            </div>
+            <div className="p-4">
+              <ul className="grid gap-2 text-sm text-slate-700 dark:text-slate-200">
+                <li>카드사 행사/간편결제 추가 혜택으로 <strong>체감가</strong> 계산하기</li>
+                <li>리뷰 수와 최근 날짜 리뷰 우선 확인, <strong>교환/반품 정책</strong> 체크</li>
+                <li>식품·생필품은 <strong>유통기한/원산지</strong> 표기 확인</li>
+                <li>전자제품은 <strong>모델명/보증기간/AS</strong> 꼭 확인</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* ───────────────── 카테고리 안내(선택) ───────────────── */}
+          <div className="rounded-2xl overflow-hidden shadow-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 mb-4">
+            <div className="bg-gradient-to-r from-sky-100 to-cyan-100 dark:from-sky-900/30 dark:to-cyan-900/30 p-3">
+              <h3 className="text-sm font-semibold text-sky-700 dark:text-sky-300">카테고리 활용법</h3>
+            </div>
+            <div className="p-4">
+              <p className="text-sm text-muted-foreground mb-2 leading-relaxed">
+                원하는 상품을 더 빨리 찾고 싶다면 카테고리/필터를 함께 사용하세요.
+              </p>
+              <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
+                <li><strong>가격대</strong>: 예산 구간으로 좁히기</li>
+                <li><strong>즉시할인/쿠폰</strong>: 체감가 기준으로 정렬</li>
+                <li><strong>무료배송</strong>: 배송비 포함 총액 기준 비교</li>
+                <li><strong>신규/재진열</strong>: 새로 뜬 딜부터 확인</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* ───────────────── FAQ ───────────────── */}
+          <div className="rounded-2xl overflow-hidden shadow-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 mb-4">
+            <div className="bg-gradient-to-r from-violet-100 to-indigo-100 dark:from-violet-900/30 dark:to-indigo-900/30 p-3">
+              <h3 className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">자주 묻는 질문</h3>
+            </div>
+            <div className="p-4 space-y-3">
+              <div>
+                <p className="text-sm font-medium text-slate-900 dark:text-white">Q. 실제 판매/배송은 어디서 하나요?</p>
+                <p className="text-sm text-slate-700 dark:text-slate-200">연결된 각 쇼핑몰에서 진행됩니다. 결제·배송·CS 정책은 판매처 기준을 따릅니다.</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-900 dark:text-white">Q. 가격이 카드와 다르게 보일 때가 있어요.</p>
+                <p className="text-sm text-slate-700 dark:text-slate-200">시간/계정/앱 환경에 따라 쿠폰 적용과 재고가 달라질 수 있습니다. 결제 직전 최종가를 꼭 확인하세요.</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-900 dark:text-white">Q. 인앱 브라우저에서 오류가 납니다.</p>
+                <p className="text-sm text-slate-700 dark:text-slate-200">우측 상단 메뉴에서 <strong>브라우저로 열기</strong>를 선택하면 해결되는 경우가 많습니다.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* ───────────────── 문의/제보 ───────────────── */}
+          <div className="rounded-2xl overflow-hidden shadow-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 mb-4">
+            <div className="bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-800/40 dark:to-slate-700/40 p-3">
+              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200">문의 & 제보</h3>
+            </div>
+            <div className="p-4">
+              <p className="text-sm text-muted-foreground">
+                놓치기 아까운 특가를 발견하셨나요? 오류나 개선 의견도 환영합니다. 아래 버튼으로 간편하게 알려주세요.
+              </p>
+              <div className="mt-3 flex items-center gap-2">
+                <a href="mailto:contact@hotdeals.app" className="px-3 py-1.5 rounded-md bg-blue-600 text-white text-xs font-semibold">이메일 보내기</a>
+                <button className="px-3 py-1.5 rounded-md bg-yellow-400 text-black text-xs font-semibold">카카오 공유</button>
+              </div>
+            </div>
+          </div>
+
         </div>
       </main>
 
