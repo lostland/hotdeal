@@ -118,6 +118,7 @@ export default function Home() {
               <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
                 이 페이지는 여러 쇼핑몰에 흩어진 <strong>실시간 특가</strong>를 한눈에 모아 보여줍니다.
                 각 카드에서 가격·옵션·간단 코멘트를 확인하고, 필요 시 <strong>공유</strong> 버튼으로 친구에게 바로 보내보세요.
+              
               </p>
               <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
                 <li>매일 바뀌는 타임세일/한정수량 위주로 업데이트</li>
@@ -136,8 +137,9 @@ export default function Home() {
               <ol className="list-decimal pl-5 space-y-2 text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
                 <li>관심 상품 카드를 눌러 <strong>상세 정보</strong>를 확인합니다.</li>
                 <li>가격, 옵션, 배송비와 적용 가능한 <strong>쿠폰</strong>을 체크합니다.</li>
-                <li>“구매하러 가기”로 <strong>공식 판매처</strong>에 이동합니다.</li>
+                <li>원하는 상품이 있으면 <strong>장바구니</strong>에 담아 결제합니다.</li>           
                 <li>결제 직전에 <strong>최종 결제 금액</strong>과 재고/배송일을 다시 확인하세요.</li>
+                
               </ol>
               <p className="mt-3 text-xs text-slate-500">
                 * 인앱 브라우저에서 결제가 원활하지 않으면 우측 상단 메뉴에서 <strong>브라우저로 열기(Chrome/Safari)</strong>를 사용하세요.
@@ -161,6 +163,40 @@ export default function Home() {
               </p>
             </div>
           </div>
+
+          {/* ───────────────── 법적 책임 안내 ───────────────── */}
+          <div className="rounded-2xl overflow-hidden shadow-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 mb-4">
+            <div className="bg-gradient-to-r from-red-100 to-rose-100 dark:from-red-900/30 dark:to-rose-900/30 p-3">
+              <h3 className="text-sm font-semibold text-red-700 dark:text-red-300">서비스 및 법적 책임 안내</h3>
+            </div>
+            <div className="p-4 space-y-3">
+              <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
+                <strong>핫딜! 쇼핑</strong>은 온라인에 흩어져 있는 특가/할인 상품 정보를 모아 보여주는 <em>정보 제공 서비스</em>입니다.
+                저희는 상품의 <strong>직접적인 판매자</strong>가 아니며, 결제·배송·A/S 등 구매 이후의 절차와는 무관합니다.
+              </p>
+              <ul className="list-disc pl-5 space-y-2 text-sm text-slate-700 dark:text-slate-200">
+                <li>
+                  모든 상품은 연결된 <strong>각 쇼핑몰·판매처</strong>에서 판매되며, 실제 구매 계약은 해당 판매자와 사용자 간에 체결됩니다.
+                </li>
+                <li>
+                  가격, 재고, 혜택, 배송, 환불/교환 등과 관련된 권리·의무는 전적으로 <strong>판매처의 정책</strong>에 따릅니다.
+                </li>
+                <li>
+                  본 사이트에 표시되는 상품 정보는 수시로 변동될 수 있으며, 
+                  <strong>정확한 정보는 반드시 결제 직전 판매처 페이지</strong>에서 확인해야 합니다.
+                </li>
+              </ul>
+              <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
+                따라서 <strong>핫딜! 쇼핑</strong>은 상품의 품질, 배송, 환불·교환, 소비자 분쟁 등에 대한 <strong>법적 책임을 지지 않습니다</strong>.  
+                모든 책임은 실제 판매자와 구매자에게 귀속됩니다.
+              </p>
+              <p className="mt-2 text-xs text-slate-500">
+                ※ 본 서비스는 단순히 정보를 수집·정리하여 제공하는 플랫폼이며, 
+                <strong>광고/마케팅/중개 행위</strong>로 간주되지 않습니다.
+              </p>
+            </div>
+          </div>
+
 
           {/* ───────────────── 핫딜 쇼핑 가이드 ───────────────── */}
           <div className="rounded-2xl overflow-hidden shadow-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 mb-4">
@@ -190,9 +226,7 @@ export default function Home() {
                   </a>
                 </li>
               </ul>
-              <p className="mt-4 text-xs text-slate-500">
-                이런 블로그성 글을 꾸준히 업데이트하면 방문자가 오래 머물고, 검색 노출과 AdSense 심사에도 긍정적입니다.
-              </p>
+              
             </div>
           </div>
           
@@ -261,8 +295,8 @@ export default function Home() {
                 놓치기 아까운 특가를 발견하셨나요? 오류나 개선 의견도 환영합니다. 아래 버튼으로 간편하게 알려주세요.
               </p>
               <div className="mt-3 flex items-center gap-2">
-                <a href="mailto:contact@hotdeals.app" className="px-3 py-1.5 rounded-md bg-blue-600 text-white text-xs font-semibold">이메일 보내기</a>
-                <button className="px-3 py-1.5 rounded-md bg-yellow-400 text-black text-xs font-semibold">카카오 공유</button>
+                <a href="mailto:freshkim1026@gmail.com" className="px-3 py-1.5 rounded-md bg-blue-600 text-white text-xs font-semibold">이메일 보내기</a>
+                
               </div>
             </div>
           </div>
