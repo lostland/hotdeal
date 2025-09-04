@@ -69,7 +69,7 @@ export async function fetchMetadata(url: string) {
         
         console.log(`User-Agent: ${userAgent}`);
         
-        await new Promise(resolve => setTimeout(resolve, Math.random() * 200 + 100)); // Shorter delay
+        await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 2000)); // 2-3초 대기
         response = await fetch(finalUrl, {
           headers: {
             'User-Agent': userAgent,

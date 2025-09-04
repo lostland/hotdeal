@@ -79,12 +79,23 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, cl
               className="w-full h-full object-cover transition-transform duration-200 hover:scale-105"
               loading="lazy"
               data-testid={`img-thumbnail-${link.id}`}
+              onError={(e) => {
+                console.error('이미지 로딩 실패:', link.customImage || link.image);
+                e.currentTarget.style.display = 'none';
+                const placeholder = e.currentTarget.nextElementSibling as HTMLElement;
+                if (placeholder) {
+                  placeholder.style.display = 'flex';
+                }
+              }}
             />
-          ) : (
-            <div className="w-full h-full bg-muted flex items-center justify-center" data-testid={`placeholder-${link.id}`}>
-              <ExternalLink className="w-8 h-8 text-muted-foreground" />
-            </div>
-          )}
+          ) : null}
+          {/* Fallback placeholder - always rendered but hidden by default when image exists */}
+          <div 
+            className={`w-full h-full bg-muted flex items-center justify-center ${(link.customImage || link.image) ? 'hidden' : 'flex'}`}
+            data-testid={`placeholder-${link.id}`}
+          >
+            <ExternalLink className="w-8 h-8 text-muted-foreground" />
+          </div>
           
           {/* Delete button overlay */}
           {!hideDeleteButton && (
