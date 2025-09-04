@@ -14,6 +14,7 @@ interface KakaoShareButtonProps {
   price?: string;
   note?: string;
   url?: string;
+  linkId?: string;
 }
 
 export function KakaoShareButton({ 
@@ -23,7 +24,8 @@ export function KakaoShareButton({
   imageUrl, 
   price, 
   note, 
-  url 
+  url,
+  linkId 
 }: KakaoShareButtonProps) {
   useEffect(() => {
     // 카카오 SDK 초기화
@@ -51,7 +53,7 @@ export function KakaoShareButton({
         shareImageUrl = "https://cdn.011st.com/11dims/resize/600x600/quality/75/11src/product/7339388653/B.jpg?559000000";
       }
       
-      const shareUrl = url || window.location.href;
+      const shareUrl = url || (linkId ? `${window.location.origin}#product-${linkId}` : window.location.href);
 
       window.Kakao.Share.sendDefault({
         objectType: "feed",

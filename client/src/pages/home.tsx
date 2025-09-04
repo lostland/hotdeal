@@ -45,6 +45,19 @@ export default function Home() {
     };
   }, []);
 
+  // URL 해시로 상품 위치로 스크롤
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash && hash.startsWith('#product-')) {
+      const element = document.getElementById(hash.substring(1));
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 500); // 데이터 로딩 후 스크롤
+      }
+    }
+  }, [links]);
+
   const handleLinkClick = (url: string) => {
     window.open(url, '_blank', 'noopener,noreferrer');
   };

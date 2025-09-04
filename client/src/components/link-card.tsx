@@ -64,6 +64,7 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, cl
 
   return (
     <article 
+      id={`product-${link.id}`}
       className={cn(
         "link-card bg-card rounded-lg shadow-sm border-2 border-slate-300 dark:border-slate-600 mb-4 overflow-hidden transition-all duration-200 hover:shadow-lg hover:shadow-blue-200/50 dark:hover:shadow-blue-500/20 hover:border-blue-400 dark:hover:border-blue-400 hover:-translate-y-1 active:scale-98 cursor-pointer",
         className
@@ -170,7 +171,7 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, cl
                 imageUrl={link.customImage || link.image || undefined}
                 price={displayPrice || undefined}
                 note={link.note || undefined}
-                url={link.url}
+                linkId={link.id}
                 data-testid={`kakao-share-${link.id}`}
               />
             </div>
