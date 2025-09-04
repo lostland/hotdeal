@@ -2,9 +2,22 @@
   "urls": [
     "https://www.11st.co.kr/products/7339388653",
     "https://smartstore.naver.com/zeniton/products/12017292999",
-    "https://brand.naver.com/cj_wellcare/products/10163541123?site_preference=device"
+    "https://brand.naver.com/cj_wellcare/products/10163541123?site_preference=device",
+    "https://brand.naver.com/brkorea/products/10763866499?site_preference=device"
   ],
   "links": [
+    {
+      "id": "06f2ebe4-69ee-4cb2-acf9-d9c53a5d8179",
+      "url": "https://brand.naver.com/cj_wellcare/products/10163541123?site_preference=device",
+      "title": "",
+      "description": "",
+      "image": "",
+      "customImage": "/objects/uploads/f9080260-6ea0-4ff3-89dd-ef025cb05547",
+      "domain": "brand.naver.com",
+      "price": null,
+      "note": null,
+      "createdAt": "2025-09-04T06:08:04.906Z"
+    },
     {
       "id": "a49fa025-d340-4c73-b894-72896feb82e8",
       "url": "https://smartstore.naver.com/zeniton/products/12017292999",
@@ -30,16 +43,16 @@
       "createdAt": "2025-09-03T07:57:18.580Z"
     },
     {
-      "id": "06f2ebe4-69ee-4cb2-acf9-d9c53a5d8179",
-      "url": "https://brand.naver.com/cj_wellcare/products/10163541123?site_preference=device",
+      "id": "7e2e52f4-2a53-4e7a-826f-78b715d96bb3",
+      "url": "https://brand.naver.com/brkorea/products/10763866499?site_preference=device",
       "title": "",
       "description": "",
       "image": "",
-      "customImage": "/objects/uploads/f9080260-6ea0-4ff3-89dd-ef025cb05547",
+      "customImage": "https://storage.googleapis.com/replit-objstore-2dcc2bc8-15d6-48dd-bd2f-fd7216c1a877/.private/uploads/f657c21b-db04-4f12-9640-2ed6ef78b020",
       "domain": "brand.naver.com",
       "price": null,
       "note": null,
-      "createdAt": "2025-09-04T06:08:04.906Z"
+      "createdAt": "2025-09-04T06:23:38.281Z"
     }
   ]
 }
