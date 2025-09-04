@@ -93,7 +93,26 @@ export default function Home() {
               <p className="text-sm text-muted-foreground">관리자가 링크를 추가할 때까지 기다려주세요.</p>
             </div>
           ) : (
+
+            
             <>
+
+              {/* ───────────────── 홍보성 안내 카드 ───────────────── */}
+              <div className="rounded-2xl overflow-hidden shadow-md border border-yellow-300 dark:border-yellow-600 bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30 mb-4">
+                <div className="p-4 text-center">
+                  <h3 className="text-lg font-bold text-yellow-800 dark:text-yellow-300 mb-2">
+                    🚀 실시간 새롭게 추가되는 핫딜!
+                  </h3>
+                  <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
+                    하루 최소 한 번은 꼭 확인해야 하는 특가 소식 🎉  
+                  </p>
+                  <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
+                    <strong>핫딜! 쇼핑</strong>에서 오늘의 새로운 딜을 한눈에 만나보세요!
+                  </p>
+                </div>
+              </div>
+
+              
               {/* Render link cards */}
               {links.map((link) => (
                 <LinkCard
