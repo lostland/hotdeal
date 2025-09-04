@@ -1,7 +1,8 @@
 {
   "urls": [
     "https://www.11st.co.kr/products/7339388653",
-    "https://smartstore.naver.com/zeniton/products/12017292999"
+    "https://smartstore.naver.com/zeniton/products/12017292999",
+    "https://brand.naver.com/cj_wellcare/products/10163541123?site_preference=device"
   ],
   "links": [
     {
@@ -27,6 +28,18 @@
       "price": "19,900원",
       "note": "🍎 프리미엄 여름사과 특가! 달콤함 최고",
       "createdAt": "2025-09-03T07:57:18.580Z"
+    },
+    {
+      "id": "06f2ebe4-69ee-4cb2-acf9-d9c53a5d8179",
+      "url": "https://brand.naver.com/cj_wellcare/products/10163541123?site_preference=device",
+      "title": "",
+      "description": "",
+      "image": "",
+      "customImage": "https://storage.googleapis.com/replit-objstore-2dcc2bc8-15d6-48dd-bd2f-fd7216c1a877/.private/uploads/f9080260-6ea0-4ff3-89dd-ef025cb05547",
+      "domain": "brand.naver.com",
+      "price": null,
+      "note": null,
+      "createdAt": "2025-09-04T06:08:04.906Z"
     }
   ]
 }
