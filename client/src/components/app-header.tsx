@@ -14,7 +14,7 @@ export function AppHeader() {
         
         {/* 카카오톡 공유 버튼 - 로고 위에 겹쳐서 우측 하단에 배치 */}
         <div className="absolute bottom-2 right-2 md:right-[15%]">
-          <KakaoShareButton />
+          <KakaoShareButton className="!flex !items-center !justify-center !w-12 !h-12 !bg-yellow-400 hover:!bg-yellow-500 !rounded-full !shadow-lg !transition-all !duration-200 hover:!scale-105 !px-0 !py-0 [&>span]:!hidden" />
         </div>
       </div>
     </header>
