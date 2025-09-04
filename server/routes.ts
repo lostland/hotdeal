@@ -165,7 +165,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "URL is required" });
       }
 
-      const newLink = await fileStorage.addUrl(url, note, customImage);
+      // Convert Google Storage URL to server path
+      let normalizedImage = customImage;
+      if (customImage && customImage.startsWith("https://storage.googleapis.com/")) {
+        const objectStorageService = new ObjectStorageService();
+        normalizedImage = objectStorageService.normalizeObjectEntityPath(customImage);
+      }
+
+      const newLink = await fileStorage.addUrl(url, note, normalizedImage);
       
       // WebSocket으로 실시간 업데이트 브로드캐스트
       if (wss) {
@@ -196,7 +203,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Old URL and new URL are required" });
       }
 
-      const updatedLink = await fileStorage.updateUrl(oldUrl, newUrl, note, customImage);
+      // Convert Google Storage URL to server path
+      let normalizedImage = customImage;
+      if (customImage && customImage.startsWith("https://storage.googleapis.com/")) {
+        const objectStorageService = new ObjectStorageService();
+        normalizedImage = objectStorageService.normalizeObjectEntityPath(customImage);
+      }
+
+      const updatedLink = await fileStorage.updateUrl(oldUrl, newUrl, note, normalizedImage);
       
       // WebSocket으로 실시간 업데이트 브로드캐스트
       if (wss) {

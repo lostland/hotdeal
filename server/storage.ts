@@ -72,8 +72,10 @@ export class MemStorage implements IStorage {
       title: insertLink.title ?? null,
       description: insertLink.description ?? null,
       image: insertLink.image ?? null,
+      customImage: insertLink.customImage ?? null,
       domain: insertLink.domain ?? null,
       price: insertLink.price ?? null,
+      note: insertLink.note ?? null,
       id,
       createdAt: new Date(),
     };
