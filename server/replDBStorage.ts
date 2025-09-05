@@ -328,9 +328,14 @@ export class ReplDBStorage {
       }
       
       console.log('Found admin:', admin.username, 'password hash length:', admin.password?.length);
+      console.log('입력된 비밀번호:', password);
+      console.log('저장된 해시:', admin.password);
       
       const bcrypt = await import('bcrypt');
-      return await bcrypt.compare(password, admin.password);
+      const compareResult = await bcrypt.compare(password, admin.password);
+      console.log('bcrypt 비교 결과:', compareResult);
+      
+      return compareResult;
     } catch (error) {
       console.error('Failed to verify admin:', error);
       return false;
