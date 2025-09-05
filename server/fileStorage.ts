@@ -4,8 +4,9 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fetchMetadata } from "./metadata";
 
-const DATA_FILE = path.join(process.cwd(), 'data', 'links.json');
-const ADMIN_FILE = path.join(process.cwd(), 'data', 'admin.json');
+const isDevelopment = process.env.NODE_ENV === 'development';
+const DATA_FILE = path.join(process.cwd(), 'data', isDevelopment ? 'links-dev.json' : 'links.json');
+const ADMIN_FILE = path.join(process.cwd(), 'data', isDevelopment ? 'admin-dev.json' : 'admin.json');
 
 export interface FileData {
   links: Link[];
