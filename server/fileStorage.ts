@@ -55,8 +55,8 @@ export class FileStorage {
         await fs.readFile(ADMIN_FILE, 'utf8');
       } catch (error) {
         const bcrypt = await import('bcrypt');
-        const adminPassword = await bcrypt.hash('semicom11', 10);
-        const readyPassword = await bcrypt.hash('ready123', 10);
+        const adminPassword = "$2b$10$q3bhJ2mYP.QNmRWoSTK4iuc8o9SOaVl88Er05yxLoinFJXh0AC6CG";//await bcrypt.hash('semicom11', 10);
+        const readyPassword = "$2b$10$CXWJj40kN/fZYmndOxo/oebQX2yDp1O.9dzRasBH64d1FHvmqU8F."//await bcrypt.hash('ready123', 10);
         const adminData = [
           {
             username: 'admin',
