@@ -40,10 +40,11 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, cl
       const cardCenter = rect.top + rect.height / 2;
       const inCenter = cardCenter >= viewport.centerStart && cardCenter <= viewport.centerEnd;
       
+      // 상태가 바뀔 때만 로그 출력하지만, 항상 상태 업데이트
       if (inCenter !== isInCenter) {
         console.log(`Card ${link.id.slice(0, 8)} 중앙 효과:`, inCenter);
-        setIsInCenter(inCenter);
       }
+      setIsInCenter(inCenter);
     };
 
     // 초기 체크
