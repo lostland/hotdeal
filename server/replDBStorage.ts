@@ -309,7 +309,12 @@ export class ReplDBStorage {
 
   async verifyAdmin(username: string, password: string): Promise<boolean> {
     try {
-      const adminData = await db.get('admin_data');
+      const result = await db.get('admin_data');
+      console.log('ReplDB admin result:', result);
+      
+      if (!result || !result.ok) return false;
+      
+      const adminData = result.value;
       if (!adminData) return false;
       
       // 배열로 변경된 admin 데이터에서 사용자 찾기
@@ -317,7 +322,12 @@ export class ReplDBStorage {
         adminData.find((admin: any) => admin.username === username) :
         (adminData.username === username ? adminData : null);
       
-      if (!admin) return false;
+      if (!admin) {
+        console.log('Admin user not found:', username);
+        return false;
+      }
+      
+      console.log('Found admin:', admin.username, 'password hash length:', admin.password?.length);
       
       const bcrypt = await import('bcrypt');
       return await bcrypt.compare(password, admin.password);
