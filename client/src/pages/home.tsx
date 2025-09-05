@@ -113,7 +113,7 @@ export default function Home() {
               {/* ───────────────── 홍보성 안내 카드 ───────────────── */}
               <div className="rounded-2xl overflow-hidden shadow-md border border-yellow-300 dark:border-yellow-600 bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30 mb-4">
                 <div className="p-4 text-center">
-                  <h3 className="text-lg font-bold te  -yellow-핫딜! 쇼핑rk:text-yellow-300 mb-2">
+                  <h3 className="text-lg font-bold text-yellow-800 dark:text-yellow-300 mb-2">
                     🚀 실시간 새롭게 추가되는 핫딜!
                   </h3>
                   <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
@@ -141,7 +141,7 @@ export default function Home() {
             </>
           )}
 
-          {/* ────────────────핫딜! 쇼핑소개 ───────────────── */}
+          {/* ───────────────── 서비스 소개 ───────────────── */}
           <div className="rounded-2xl overflow-hidden shadow-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 mb-4">
             <div className="bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 p-3">
               <h3 className="text-sm font-semibold text-blue-700 dark:text-blue-300">핫딜! 쇼핑 안내</h3>
@@ -198,7 +198,7 @@ export default function Home() {
 
           {/* ───────────────── 법적 책임 안내 ───────────────── */}
           <div className="rounded-2xl overflow-hidden shadow-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 mb-4">
-            <핫딜! 쇼핑assName="은g-gradient-to-r from-red-100 to-rose-100 dark:from-red-900/30 dark:to-rose-900/30 p-3">
+            <div className="bg-gradient-to-r from-red-100 to-rose-100 dark:from-red-900/30 dark:to-rose-900/30 p-3">
               <h3 className="text-sm font-semibold text-red-700 dark:text-red-300">서비스 및 법적 책임 안내</h3>
             </div>
             <div className="p-4 space-y-3">
@@ -211,7 +211,7 @@ export default function Home() {
                   모든 상품은 연결된 <strong>각 쇼핑몰·판매처</strong>에서 판매되며, 실제 구매 계약은 해당 판매자와 사용자 간에 체결됩니다.
                 </li>
                 <li>
-                  가격, 재고, 혜택, 배송, 환불핫딜! 쇼핑 관련된 권리·의은는 전적으로 <strong>판매처의 정책</strong>에 따릅니다.
+                  가격, 재고, 혜택, 배송, 환불/교환 등과 관련된 권리·의무는 전적으로 <strong>판매처의 정책</strong>에 따릅니다.
                 </li>
                 <li>
                   본 사이트에 표시되는 상품 정보는 수시로 변동될 수 있으며, 
@@ -230,7 +230,7 @@ export default function Home() {
           </div>
 
 
-          {/* ───────────────── 핫딜 쇼핑 가이드 ──쇼핑───────────── */}
+          {/* ───────────────── 핫딜 쇼핑 가이드 ───────────────── */}
           <div className="rounded-2xl overflow-hidden shadow-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 mb-4">
             <div className="bg-gradient-to-r from-indigo-100 to-violet-100 dark:from-indigo-900/30 dark:to-violet-900/30 p-3">
               <h3 className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">핫딜 쇼핑 가이드</h3>
