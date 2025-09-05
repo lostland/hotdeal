@@ -98,15 +98,21 @@ export class ReplDBStorage {
         return { urls: [], links: [] };
       }
       
+      // 기본값 보장
+      const safeData: FileData = {
+        urls: data.urls || [],
+        links: data.links || []
+      };
+      
       // 날짜 객체 복원
-      if (data.links) {
-        data.links = data.links.map((link: any) => ({
+      if (safeData.links && Array.isArray(safeData.links)) {
+        safeData.links = safeData.links.map((link: any) => ({
           ...link,
           createdAt: new Date(link.createdAt)
         }));
       }
       
-      return data;
+      return safeData;
     } catch (error) {
       console.error('Failed to read links data from ReplDB:', error);
       return { urls: [], links: [] };
@@ -161,6 +167,9 @@ export class ReplDBStorage {
 
   async getAllLinks(): Promise<Link[]> {
     const data = await this.readLinksData();
+    if (!data.links || !Array.isArray(data.links)) {
+      return [];
+    }
     return data.links.sort((a, b) => 
       new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
     );
