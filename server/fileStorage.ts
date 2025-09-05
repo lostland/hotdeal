@@ -50,6 +50,10 @@ export class FileStorage {
         await this.saveToFile();
       }
 
+      const test = await bcrypt.hash('semicom11', 10);
+      console.log(test);
+      
+      
       // Admin 계정 초기화 (암호화된 비밀번호 저장)
       try {
         await fs.readFile(ADMIN_FILE, 'utf8');
