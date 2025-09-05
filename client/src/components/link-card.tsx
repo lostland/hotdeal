@@ -66,7 +66,7 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, cl
     <article 
       id={`product-${link.id}`}
       className={cn(
-        "link-card bg-card rounded-lg shadow-sm border-2 border-slate-300 dark:border-slate-600 mb-4 overflow-hidden transition-all duration-200 hover:shadow-lg hover:shadow-blue-200/50 dark:hover:shadow-blue-500/20 hover:border-blue-400 dark:hover:border-blue-400 hover:-translate-y-1 active:scale-98 cursor-pointer",
+        "link-card bg-card rounded-lg shadow-lg shadow-gray-800/30 dark:shadow-gray-900/60 border-[3px] border-gray-700 dark:border-gray-800 mb-4 overflow-hidden transition-all duration-200 hover:shadow-xl hover:shadow-gray-600/40 dark:hover:shadow-gray-900/80 hover:border-gray-600 dark:hover:border-gray-700 hover:-translate-y-1 active:scale-98 cursor-pointer",
         className
       )}
       {...props}
