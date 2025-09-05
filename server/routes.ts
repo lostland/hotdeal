@@ -4,7 +4,10 @@ import { WebSocketServer } from 'ws';
 import { fileStorage } from "./fileStorage";
 import { insertLinkSchema } from "@shared/schema";
 import { fetchMetadata } from "./metadata";
-import { ObjectStorageService } from "./objectStorage";
+import multer from 'multer';
+import fs from 'fs/promises';
+import path from 'path';
+import { randomUUID } from 'crypto';
 
 let wss: WebSocketServer;
 
@@ -59,6 +62,38 @@ function queueMetadataRequest(url: string): Promise<any> {
     processMetadataQueue();
   });
 }
+
+// Multer 설정 - 이미지 파일 업로드
+const storage = multer.diskStorage({
+  destination: async (req, file, cb) => {
+    const uploadDir = path.join(process.cwd(), 'data', 'images');
+    try {
+      await fs.mkdir(uploadDir, { recursive: true });
+      cb(null, uploadDir);
+    } catch (error) {
+      cb(error as Error, '');
+    }
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    const filename = `${randomUUID()}${ext}`;
+    cb(null, filename);
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('이미지 파일만 업로드 가능합니다.'));
+    }
+  }
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get all links
@@ -187,29 +222,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Serve private objects (uploaded images)
-  app.get("/objects/:objectPath(*)", async (req, res) => {
-    const objectStorageService = new ObjectStorageService();
+  // 업로드된 이미지 서빙
+  app.get("/images/:filename", async (req, res) => {
     try {
-      const objectFile = await objectStorageService.getObjectEntityFile(
-        req.path,
-      );
-      objectStorageService.downloadObject(objectFile, res);
+      const filename = req.params.filename;
+      const imagePath = path.join(process.cwd(), 'data', 'images', filename);
+      
+      // 파일 존재 확인
+      await fs.access(imagePath);
+      
+      // 이미지 파일 전송
+      res.sendFile(imagePath);
     } catch (error) {
-      console.error("Error serving object:", error);
-      return res.sendStatus(404);
+      console.error("Error serving image:", error);
+      res.status(404).json({ message: "Image not found" });
     }
   });
 
-  // Get upload URL for object entity
-  app.post("/api/objects/upload", async (req, res) => {
+  // 이미지 업로드 엔드포인트
+  app.post("/api/images/upload", upload.single('image'), async (req, res) => {
     try {
-      const objectStorageService = new ObjectStorageService();
-      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
-      res.json({ uploadURL });
+      if (!req.file) {
+        return res.status(400).json({ message: "이미지 파일이 필요합니다." });
+      }
+      
+      // 업로드된 파일 정보 반환
+      const imageUrl = `/images/${req.file.filename}`;
+      res.json({ 
+        success: true,
+        imageUrl: imageUrl,
+        filename: req.file.filename 
+      });
     } catch (error) {
-      console.error("Error getting upload URL:", error);
-      res.status(500).json({ message: "Failed to get upload URL" });
+      console.error("Error uploading image:", error);
+      res.status(500).json({ message: "이미지 업로드 중 오류가 발생했습니다." });
     }
   });
 
@@ -222,12 +268,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "URL is required" });
       }
 
-      // Convert Google Storage URL to server path
+      // 이미지 URL이 있으면 그대로 사용 (로컬 파일 경로)
       let normalizedImage = customImage;
-      if (customImage && customImage.startsWith("https://storage.googleapis.com/")) {
-        const objectStorageService = new ObjectStorageService();
-        normalizedImage = objectStorageService.normalizeObjectEntityPath(customImage);
-      }
 
       const newLink = await fileStorage.addUrl(url, note, normalizedImage);
       
@@ -260,12 +302,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Old URL and new URL are required" });
       }
 
-      // Convert Google Storage URL to server path
+      // 이미지 URL이 있으면 그대로 사용 (로컬 파일 경로)
       let normalizedImage = customImage;
-      if (customImage && customImage.startsWith("https://storage.googleapis.com/")) {
-        const objectStorageService = new ObjectStorageService();
-        normalizedImage = objectStorageService.normalizeObjectEntityPath(customImage);
-      }
 
       const updatedLink = await fileStorage.updateUrl(oldUrl, newUrl, note, normalizedImage);
       

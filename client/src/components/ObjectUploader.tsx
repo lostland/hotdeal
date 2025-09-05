@@ -6,11 +6,7 @@ import { Upload, X, Image } from "lucide-react";
 interface ObjectUploaderProps {
   maxNumberOfFiles?: number;
   maxFileSize?: number;
-  onGetUploadParameters: () => Promise<{
-    method: "PUT";
-    url: string;
-  }>;
-  onComplete?: (result: { successful: Array<{ uploadURL: string }> }) => void;
+  onComplete?: (result: { successful: Array<{ imageUrl: string }> }) => void;
   onFileSelected?: (file: File | null) => void;
   buttonClassName?: string;
   children: ReactNode;
@@ -18,7 +14,7 @@ interface ObjectUploaderProps {
 }
 
 export interface ObjectUploaderRef {
-  uploadSelectedFile: () => Promise<{ successful: Array<{ uploadURL: string }> } | null>;
+  uploadSelectedFile: () => Promise<{ successful: Array<{ imageUrl: string }> } | null>;
   getSelectedFile: () => File | null;
   clearSelectedFile: () => void;
 }
@@ -26,7 +22,6 @@ export interface ObjectUploaderRef {
 export const ObjectUploader = forwardRef<ObjectUploaderRef, ObjectUploaderProps>(({
   maxNumberOfFiles = 1,
   maxFileSize = 10485760, // 10MB default
-  onGetUploadParameters,
   onComplete,
   onFileSelected,
   buttonClassName,
@@ -89,22 +84,21 @@ export const ObjectUploader = forwardRef<ObjectUploaderRef, ObjectUploaderProps>
 
     setIsUploading(true);
     try {
-      const { url } = await onGetUploadParameters();
+      const formData = new FormData();
+      formData.append('image', selectedFile);
       
-      const response = await fetch(url, {
-        method: 'PUT',
-        body: selectedFile,
-        headers: {
-          'Content-Type': selectedFile.type,
-        },
+      const response = await fetch('/api/images/upload', {
+        method: 'POST',
+        body: formData,
       });
 
       if (!response.ok) {
         throw new Error('업로드에 실패했습니다.');
       }
 
+      const data = await response.json();
       const result = {
-        successful: [{ uploadURL: url.split('?')[0] }]
+        successful: [{ imageUrl: data.imageUrl }]
       };
 
       onComplete?.(result);
@@ -116,7 +110,7 @@ export const ObjectUploader = forwardRef<ObjectUploaderRef, ObjectUploaderProps>
     } finally {
       setIsUploading(false);
     }
-  }, [selectedFile, onGetUploadParameters, onComplete]);
+  }, [selectedFile, onComplete]);
 
   const removeFile = useCallback(() => {
     setSelectedFile(null);

@@ -13,49 +13,36 @@ export interface FileData {
 }
 
 export class FileStorage {
-  private cache: FileData | null = null;
-  private initPromise: Promise<void> | null = null;
-
   constructor() {
-    this.initPromise = this.initialize();
+    this.initialize();
   }
 
   private async initialize() {
     try {
       await fs.mkdir(path.dirname(DATA_FILE), { recursive: true });
+      await fs.mkdir(path.dirname(ADMIN_FILE), { recursive: true });
 
+      // 링크 데이터 파일 초기화
       try {
-        const data = await fs.readFile(DATA_FILE, 'utf8');
-        this.cache = JSON.parse(data);
-        console.log(`파일에서 ${this.cache?.urls?.length || 0}개 URL과 ${this.cache?.links?.length || 0}개 링크를 로드했습니다.`);
-        
-        // 날짜 객체 복원
-        if (this.cache?.links) {
-          this.cache.links = this.cache.links.map(link => ({
-            ...link,
-            createdAt: new Date(link.createdAt!)
-          }));
-        }
-        
-        console.log('기존 저장된 데이터를 사용합니다.');
-        
+        await fs.readFile(DATA_FILE, 'utf8');
+        console.log('기존 링크 데이터 파일을 확인했습니다.');
       } catch (error) {
-        console.log('저장된 파일이 없어 빈 데이터로 시작합니다.');
-        // 파일이 없으면 빈 상태로 시작
-        this.cache = {
+        console.log('링크 데이터 파일이 없어 빈 데이터로 시작합니다.');
+        const emptyData: FileData = {
           urls: [],
           links: []
         };
-        await this.saveToFile();
+        await fs.writeFile(DATA_FILE, JSON.stringify(emptyData, null, 2));
       }
 
-      // Admin 계정 초기화 (암호화된 비밀번호 저장)
+      // Admin 계정 초기화 (기존 방식 유지)
       try {
         await fs.readFile(ADMIN_FILE, 'utf8');
+        console.log('기존 관리자 계정 파일을 확인했습니다.');
       } catch (error) {
-        const bcrypt = await import('bcrypt');
-        const adminPassword = "$2b$10$q3bhJ2mYP.QNmRWoSTK4iuc8o9SOaVl88Er05yxLoinFJXh0AC6CG";//await bcrypt.hash('semicom11', 10);
-        const readyPassword = "$2b$10$CXWJj40kN/fZYmndOxo/oebQX2yDp1O.9dzRasBH64d1FHvmqU8F."//await bcrypt.hash('ready123', 10);
+        console.log('관리자 계정 파일을 생성합니다.');
+        const adminPassword = "$2b$10$q3bhJ2mYP.QNmRWoSTK4iuc8o9SOaVl88Er05yxLoinFJXh0AC6CG";
+        const readyPassword = "$2b$10$CXWJj40kN/fZYmndOxo/oebQX2yDp1O.9dzRasBH64d1FHvmqU8F.";
         const adminData = [
           {
             username: 'admin',
@@ -70,51 +57,9 @@ export class FileStorage {
       }
     } catch (error) {
       console.error('Failed to initialize file storage:', error);
-      this.cache = { urls: [], links: [] };
     }
   }
 
-  private async generateLinksFromUrls() {
-    if (!this.cache) return;
-    
-    this.cache.links = [];
-    
-    for (const url of this.cache.urls) {
-      try {
-        const metadata = await fetchMetadata(url);
-        const link: Link = {
-          id: randomUUID(),
-          url,
-          title: metadata.title,
-          description: metadata.description,
-          image: metadata.image,
-          customImage: null,
-          domain: metadata.domain,
-          price: metadata.price,
-          note: null,
-          createdAt: new Date()
-        };
-        this.cache.links.push(link);
-      } catch (error) {
-        console.error(`Failed to generate link for ${url}:`, error);
-        // Fallback link with basic info
-        const urlObj = new URL(url);
-        const domain = urlObj.hostname;
-        
-        let fallbackData = this.getFallbackData(url, domain);
-        
-        const link: Link = {
-          id: randomUUID(),
-          url,
-          ...fallbackData,
-          customImage: null,
-          note: null,
-          createdAt: new Date()
-        };
-        this.cache.links.push(link);
-      }
-    }
-  }
 
   private getFallbackData(url: string, domain: string) {
     if (domain.includes('naver')) {
@@ -152,46 +97,54 @@ export class FileStorage {
     }
   }
 
-  private async saveToFile() {
-    if (!this.cache) return;
+  // admin.json과 동일한 방식으로 파일 읽기/쓰기
+  private async readLinksData(): Promise<FileData> {
     try {
-      await fs.writeFile(DATA_FILE, JSON.stringify(this.cache, null, 2));
+      const data = await fs.readFile(DATA_FILE, 'utf8');
+      const fileData = JSON.parse(data);
+      
+      // 날짜 객체 복원
+      if (fileData?.links) {
+        fileData.links = fileData.links.map((link: any) => ({
+          ...link,
+          createdAt: new Date(link.createdAt)
+        }));
+      }
+      
+      return fileData;
     } catch (error) {
-      console.error('Failed to save to file:', error);
+      console.error('Failed to read links data:', error);
+      return { urls: [], links: [] };
+    }
+  }
+
+  private async saveLinksData(data: FileData): Promise<boolean> {
+    try {
+      await fs.writeFile(DATA_FILE, JSON.stringify(data, null, 2));
+      return true;
+    } catch (error) {
+      console.error('Failed to save links data:', error);
+      return false;
     }
   }
 
   async getAllLinks(): Promise<Link[]> {
-    if (this.initPromise) {
-      await this.initPromise;
-      this.initPromise = null;
-    }
-    
-    if (!this.cache) return [];
-    
-    // 기존 저장된 링크만 빠르게 반환
-    return this.cache.links.sort((a, b) => 
+    const data = await this.readLinksData();
+    return data.links.sort((a, b) => 
       new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
     );
   }
 
   async addUrl(url: string, note?: string | null, customImage?: string | null): Promise<Link> {
-    if (this.initPromise) {
-      await this.initPromise;
-      this.initPromise = null;
-    }
-
-    if (!this.cache) {
-      throw new Error('Storage not initialized');
-    }
+    const data = await this.readLinksData();
 
     // URL 중복 체크
-    if (this.cache.urls.includes(url)) {
+    if (data.urls.includes(url)) {
       throw new Error('URL already exists');
     }
 
     // URL 추가
-    this.cache.urls.push(url);
+    data.urls.push(url);
 
     // 메타데이터 가져와서 링크 생성
     try {
@@ -208,8 +161,8 @@ export class FileStorage {
         note: note || null,
         createdAt: new Date()
       };
-      this.cache.links.push(link);
-      await this.saveToFile();
+      data.links.push(link);
+      await this.saveLinksData(data);
       return link;
     } catch (error) {
       console.error(`Failed to fetch metadata for ${url}:`, error);
@@ -226,65 +179,50 @@ export class FileStorage {
         note: note || null,
         createdAt: new Date()
       };
-      this.cache.links.push(link);
-      await this.saveToFile();
+      data.links.push(link);
+      await this.saveLinksData(data);
       return link;
     }
   }
 
   async removeUrl(url: string): Promise<boolean> {
-    if (this.initPromise) {
-      await this.initPromise;
-      this.initPromise = null;
-    }
+    const data = await this.readLinksData();
 
-    if (!this.cache) return false;
-
-    const urlIndex = this.cache.urls.indexOf(url);
+    const urlIndex = data.urls.indexOf(url);
     if (urlIndex === -1) return false;
 
     // URL과 해당 링크 모두 제거
-    this.cache.urls.splice(urlIndex, 1);
-    this.cache.links = this.cache.links.filter(link => link.url !== url);
+    data.urls.splice(urlIndex, 1);
+    data.links = data.links.filter(link => link.url !== url);
     
-    await this.saveToFile();
+    await this.saveLinksData(data);
     return true;
   }
 
   async getUrls(): Promise<string[]> {
-    if (this.initPromise) {
-      await this.initPromise;
-      this.initPromise = null;
-    }
-    return this.cache?.urls || [];
+    const data = await this.readLinksData();
+    return data.urls || [];
   }
 
   async updateUrl(oldUrl: string, newUrl: string, note?: string | null, customImage?: string | null): Promise<Link> {
-    if (this.initPromise) {
-      await this.initPromise;
-      this.initPromise = null;
-    }
-
-    if (!this.cache) {
-      throw new Error('Storage not initialized');
-    }
+    const data = await this.readLinksData();
 
     // 기존 URL이 존재하는지 확인
-    const oldUrlIndex = this.cache.urls.indexOf(oldUrl);
+    const oldUrlIndex = data.urls.indexOf(oldUrl);
     if (oldUrlIndex === -1) {
       throw new Error('Original URL not found');
     }
 
     // 새 URL이 다르면서 이미 존재하는지 확인
-    if (oldUrl !== newUrl && this.cache.urls.includes(newUrl)) {
+    if (oldUrl !== newUrl && data.urls.includes(newUrl)) {
       throw new Error('New URL already exists');
     }
 
     // URL 업데이트
-    this.cache.urls[oldUrlIndex] = newUrl;
+    data.urls[oldUrlIndex] = newUrl;
 
     // 기존 링크 찾기
-    const linkIndex = this.cache.links.findIndex(link => link.url === oldUrl);
+    const linkIndex = data.links.findIndex(link => link.url === oldUrl);
     if (linkIndex === -1) {
       throw new Error('Link not found');
     }
@@ -293,8 +231,8 @@ export class FileStorage {
     if (oldUrl !== newUrl) {
       try {
         const metadata = await fetchMetadata(newUrl);
-        this.cache.links[linkIndex] = {
-          ...this.cache.links[linkIndex],
+        data.links[linkIndex] = {
+          ...data.links[linkIndex],
           url: newUrl,
           title: metadata.title,
           description: metadata.description,
@@ -311,8 +249,8 @@ export class FileStorage {
         const domain = urlObj.hostname;
         const fallbackData = this.getFallbackData(newUrl, domain);
         
-        this.cache.links[linkIndex] = {
-          ...this.cache.links[linkIndex],
+        data.links[linkIndex] = {
+          ...data.links[linkIndex],
           url: newUrl,
           ...fallbackData,
           customImage: customImage || null,
@@ -321,12 +259,12 @@ export class FileStorage {
       }
     } else {
       // URL이 같으면 note와 customImage만 업데이트
-      this.cache.links[linkIndex].note = note || null;
-      this.cache.links[linkIndex].customImage = customImage || null;
+      data.links[linkIndex].note = note || null;
+      data.links[linkIndex].customImage = customImage || null;
     }
 
-    await this.saveToFile();
-    return this.cache.links[linkIndex];
+    await this.saveLinksData(data);
+    return data.links[linkIndex];
   }
 
   async verifyAdmin(username: string, password: string): Promise<boolean> {
@@ -382,32 +320,22 @@ export class FileStorage {
   }
 
   async getBackupData(): Promise<FileData> {
-    if (this.initPromise) {
-      await this.initPromise;
-    }
-    return {
-      urls: this.cache?.urls || [],
-      links: this.cache?.links || []
-    };
+    return await this.readLinksData();
   }
 
   async restoreFromBackup(backupData: FileData): Promise<void> {
-    if (this.initPromise) {
-      await this.initPromise;
-    }
-    
     // 날짜 객체 복원
     const restoredLinks = backupData.links.map(link => ({
       ...link,
       createdAt: new Date(link.createdAt!)
     }));
     
-    this.cache = {
+    const data: FileData = {
       urls: backupData.urls,
       links: restoredLinks
     };
     
-    await this.saveToFile();
+    await this.saveLinksData(data);
   }
 }
 

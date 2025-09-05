@@ -79,8 +79,8 @@ export default function Admin() {
       
       if (selectedFile) {
         const uploadResult = await newImageUploaderRef.current?.uploadSelectedFile();
-        if (uploadResult?.successful?.[0]?.uploadURL) {
-          customImageUrl = uploadResult.successful[0].uploadURL;
+        if (uploadResult?.successful?.[0]?.imageUrl) {
+          customImageUrl = uploadResult.successful[0].imageUrl;
         }
       }
       
@@ -120,8 +120,8 @@ export default function Admin() {
       
       if (selectedFile) {
         const uploadResult = await editImageUploaderRef.current?.uploadSelectedFile();
-        if (uploadResult?.successful?.[0]?.uploadURL) {
-          customImageUrl = uploadResult.successful[0].uploadURL;
+        if (uploadResult?.successful?.[0]?.imageUrl) {
+          customImageUrl = uploadResult.successful[0].imageUrl;
         }
       }
       
@@ -398,14 +398,6 @@ export default function Admin() {
   };
 
   // 이미지 업로드 핸들러
-  const handleGetUploadParameters = async () => {
-    const response = await apiRequest("POST", "/api/objects/upload");
-    const data = await response.json();
-    return {
-      method: "PUT" as const,
-      url: data.uploadURL,
-    };
-  };
 
 
   // 로그인 페이지
@@ -672,7 +664,6 @@ export default function Admin() {
                 </label>
                 <ObjectUploader
                   ref={newImageUploaderRef}
-                  onGetUploadParameters={handleGetUploadParameters}
                   showDropZone={true}
                 >
                   <Upload className="w-4 h-4 mr-2" />
@@ -733,7 +724,6 @@ export default function Admin() {
                           <label className="block text-sm font-medium mb-1">커스텀 이미지</label>
                           <ObjectUploader
                             ref={editImageUploaderRef}
-                            onGetUploadParameters={handleGetUploadParameters}
                             showDropZone={true}
                           >
                             <Upload className="w-4 h-4 mr-2" />
