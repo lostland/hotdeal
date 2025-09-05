@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { KakaoShareButton } from "./kakao-share-button";
+import { useState, useEffect, useRef } from "react";
 
 interface LinkCardProps {
   link: Link;
@@ -14,6 +15,9 @@ interface LinkCardProps {
 }
 
 export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, className, ...props }: LinkCardProps) {
+  const cardRef = useRef<HTMLElement>(null);
+  const [isInCenter, setIsInCenter] = useState(false);
+
   // Fetch real-time price if link.price is null
   const { data: priceData, isLoading: priceLoading } = useQuery<{price: string | null; linkId: string}>({
     queryKey: [`/api/price/${link.id}`],
@@ -21,6 +25,46 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, cl
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
+
+  // Intersection Observer to detect when card is in center of viewport
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const rect = entry.boundingClientRect;
+            const viewport = {
+              height: window.innerHeight,
+              centerStart: window.innerHeight * 0.3, // 30% from top
+              centerEnd: window.innerHeight * 0.7,   // 70% from top
+            };
+            
+            const cardCenter = rect.top + rect.height / 2;
+            const inCenter = cardCenter >= viewport.centerStart && cardCenter <= viewport.centerEnd;
+            
+            setIsInCenter(inCenter);
+          } else {
+            setIsInCenter(false);
+          }
+        });
+      },
+      {
+        root: null,
+        rootMargin: '0px',
+        threshold: [0, 0.1, 0.25, 0.5, 0.75, 1],
+      }
+    );
+
+    if (cardRef.current) {
+      observer.observe(cardRef.current);
+    }
+
+    return () => {
+      if (cardRef.current) {
+        observer.unobserve(cardRef.current);
+      }
+    };
+  }, []);
 
   const displayPrice = link.price || priceData?.price;
   const getDomainIcon = (domain: string) => {
@@ -64,9 +108,14 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, cl
 
   return (
     <article 
+      ref={cardRef}
       id={`product-${link.id}`}
       className={cn(
-        "link-card bg-card rounded-lg shadow-lg shadow-gray-800/30 dark:shadow-gray-900/60 border-[3px] border-gray-700 dark:border-gray-800 mb-4 overflow-hidden transition-all duration-200 hover:shadow-xl hover:shadow-gray-600/40 dark:hover:shadow-gray-900/80 hover:border-gray-600 dark:hover:border-gray-700 hover:-translate-y-1 active:scale-98 cursor-pointer",
+        "link-card bg-card rounded-lg shadow-lg shadow-gray-800/30 dark:shadow-gray-900/60 border-[3px] border-gray-700 dark:border-gray-800 mb-4 overflow-hidden transition-all duration-300 cursor-pointer",
+        // hover 효과
+        "hover:shadow-xl hover:shadow-gray-600/40 dark:hover:shadow-gray-900/80 hover:border-gray-600 dark:hover:border-gray-700 hover:-translate-y-1 active:scale-98",
+        // 스크롤 중앙 위치에서 자동 hover 효과
+        isInCenter && "shadow-xl shadow-gray-600/40 dark:shadow-gray-900/80 border-gray-600 dark:border-gray-700 -translate-y-1",
         className
       )}
       {...props}
