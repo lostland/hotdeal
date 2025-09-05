@@ -26,43 +26,36 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, cl
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
-  // Intersection Observer to detect when card is in center of viewport
+  // Check if card is in center viewport on scroll
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const rect = entry.boundingClientRect;
-            const viewport = {
-              height: window.innerHeight,
-              centerStart: window.innerHeight * 0.3, // 30% from top
-              centerEnd: window.innerHeight * 0.7,   // 70% from top
-            };
-            
-            const cardCenter = rect.top + rect.height / 2;
-            const inCenter = cardCenter >= viewport.centerStart && cardCenter <= viewport.centerEnd;
-            
-            setIsInCenter(inCenter);
-          } else {
-            setIsInCenter(false);
-          }
-        });
-      },
-      {
-        root: null,
-        rootMargin: '0px',
-        threshold: [0, 0.1, 0.25, 0.5, 0.75, 1],
+    const checkIfInCenter = () => {
+      if (!cardRef.current) return;
+      
+      const rect = cardRef.current.getBoundingClientRect();
+      const viewport = {
+        centerStart: window.innerHeight * 0.35, // 35% from top
+        centerEnd: window.innerHeight * 0.65,   // 65% from top
+      };
+      
+      const cardCenter = rect.top + rect.height / 2;
+      const inCenter = cardCenter >= viewport.centerStart && cardCenter <= viewport.centerEnd;
+      
+      if (inCenter !== isInCenter) {
+        console.log(`Card ${link.id.slice(0, 8)} 중앙 효과:`, inCenter);
+        setIsInCenter(inCenter);
       }
-    );
+    };
 
-    if (cardRef.current) {
-      observer.observe(cardRef.current);
-    }
+    // 초기 체크
+    checkIfInCenter();
+    
+    // 스크롤 이벤트 리스너
+    window.addEventListener('scroll', checkIfInCenter, { passive: true });
+    window.addEventListener('resize', checkIfInCenter);
 
     return () => {
-      if (cardRef.current) {
-        observer.unobserve(cardRef.current);
-      }
+      window.removeEventListener('scroll', checkIfInCenter);
+      window.removeEventListener('resize', checkIfInCenter);
     };
   }, []);
 
@@ -114,8 +107,8 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, cl
         "link-card bg-card rounded-lg shadow-lg shadow-gray-800/30 dark:shadow-gray-900/60 border-[3px] border-gray-700 dark:border-gray-800 mb-4 overflow-hidden transition-all duration-300 cursor-pointer",
         // hover 효과
         "hover:shadow-xl hover:shadow-gray-600/40 dark:hover:shadow-gray-900/80 hover:border-gray-600 dark:hover:border-gray-700 hover:-translate-y-1 active:scale-98",
-        // 스크롤 중앙 위치에서 자동 hover 효과
-        isInCenter && "shadow-xl shadow-gray-600/40 dark:shadow-gray-900/80 border-gray-600 dark:border-gray-700 -translate-y-1",
+        // 스크롤 중앙 위치에서 자동 hover 효과 (더 강한 효과)
+        isInCenter && "shadow-2xl shadow-sky-500/50 dark:shadow-sky-400/40 border-sky-500 dark:border-sky-400 -translate-y-2 scale-105",
         className
       )}
       {...props}
