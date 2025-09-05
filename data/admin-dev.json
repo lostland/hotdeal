@@ -1,4 +1,10 @@
-{
-  "username": "admin",
-  "password": "$2b$10$bcjxvlJpekHfdHeSojanQOJaNJm9uJqENIbSVQwADfq4uGQgGpD9m"
-}
+[
+  {
+    "username": "admin",
+    "password": "$2b$10$bcjxvlJpekHfdHeSojanQOJaNJm9uJqENIbSVQwADfq4uGQgGpD9m"
+  },
+  {
+    "username": "ready",
+    "password": "$2b$10$CXWJj40kN/fZYmndOxo/oebQX2yDp1O.9dzRasBH64d1FHvmqU8F."
+  }
+]

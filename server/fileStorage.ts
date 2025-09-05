@@ -50,20 +50,23 @@ export class FileStorage {
         await this.saveToFile();
       }
 
-      const test = await bcrypt.hash('semicom11', 10);
-      console.log(test);
-      
-      
       // Admin 계정 초기화 (암호화된 비밀번호 저장)
       try {
         await fs.readFile(ADMIN_FILE, 'utf8');
       } catch (error) {
         const bcrypt = await import('bcrypt');
-        const hashedPassword = await bcrypt.hash('semicom11', 10);
-        const adminData = {
-          username: 'admin',
-          password: hashedPassword
-        };
+        const adminPassword = await bcrypt.hash('semicom11', 10);
+        const readyPassword = await bcrypt.hash('ready123', 10);
+        const adminData = [
+          {
+            username: 'admin',
+            password: adminPassword
+          },
+          {
+            username: 'ready',
+            password: readyPassword
+          }
+        ];
         await fs.writeFile(ADMIN_FILE, JSON.stringify(adminData, null, 2));
       }
     } catch (error) {
@@ -332,12 +335,49 @@ export class FileStorage {
       const data = await fs.readFile(ADMIN_FILE, 'utf8');
       const adminData = JSON.parse(data);
       
-      if (adminData.username !== username) return false;
+      // 배열로 변경된 admin 데이터에서 사용자 찾기
+      const admin = Array.isArray(adminData) ? 
+        adminData.find(admin => admin.username === username) :
+        (adminData.username === username ? adminData : null);
+      
+      if (!admin) return false;
       
       const bcrypt = await import('bcrypt');
-      return await bcrypt.compare(password, adminData.password);
+      return await bcrypt.compare(password, admin.password);
     } catch (error) {
       console.error('Failed to verify admin:', error);
+      return false;
+    }
+  }
+
+  async changeAdminPassword(username: string, oldPassword: string, newPassword: string): Promise<boolean> {
+    try {
+      const data = await fs.readFile(ADMIN_FILE, 'utf8');
+      let adminData = JSON.parse(data);
+      
+      // 기존 비밀번호 확인
+      const isOldPasswordValid = await this.verifyAdmin(username, oldPassword);
+      if (!isOldPasswordValid) {
+        return false;
+      }
+      
+      // 배열 형태로 변환 (기존 단일 객체 지원)
+      if (!Array.isArray(adminData)) {
+        adminData = [adminData];
+      }
+      
+      // 사용자 찾아서 비밀번호 변경
+      const adminIndex = adminData.findIndex(admin => admin.username === username);
+      if (adminIndex === -1) return false;
+      
+      const bcrypt = await import('bcrypt');
+      const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+      adminData[adminIndex].password = hashedNewPassword;
+      
+      await fs.writeFile(ADMIN_FILE, JSON.stringify(adminData, null, 2));
+      return true;
+    } catch (error) {
+      console.error('Failed to change admin password:', error);
       return false;
     }
   }

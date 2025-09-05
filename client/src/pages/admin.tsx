@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ExternalLink, Trash2, Plus, LogOut, Edit2, Save, X, Upload } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ExternalLink, Trash2, Plus, LogOut, Edit2, Save, X, Upload, Key } from "lucide-react";
 import { type Link } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -12,6 +13,7 @@ import { ObjectUploader, type ObjectUploaderRef } from "@/components/ObjectUploa
 
 export default function Admin() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentUsername, setCurrentUsername] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [newUrl, setNewUrl] = useState("");
@@ -22,6 +24,11 @@ export default function Admin() {
   const [editUrl, setEditUrl] = useState("");
   const [editNote, setEditNote] = useState("");
   const [editCustomImage, setEditCustomImage] = useState("");
+  // 비밀번호 변경 상태
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const { toast } = useToast();
   
   const newImageUploaderRef = useRef<ObjectUploaderRef>(null);
@@ -48,6 +55,7 @@ export default function Admin() {
     onSuccess: (data) => {
       if (data.success) {
         setIsLoggedIn(true);
+        setCurrentUsername(data.username);
         setLoginError("");
         refetchUrls();
       } else {
@@ -160,6 +168,39 @@ export default function Admin() {
     },
   });
 
+  // 비밀번호 변경 뮤테이션
+  const changePasswordMutation = useMutation({
+    mutationFn: async (data: { username: string; oldPassword: string; newPassword: string }) => {
+      const response = await apiRequest("POST", "/api/admin/change-password", data);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (data.success) {
+        toast({
+          title: "비밀번호 변경 완료",
+          description: data.message,
+        });
+        setShowPasswordDialog(false);
+        setOldPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+      } else {
+        toast({
+          title: "비밀번호 변경 실패",
+          description: data.message,
+          variant: "destructive",
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "비밀번호 변경 실패",
+        description: error.message || "비밀번호 변경 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     loginMutation.mutate({ username, password });
@@ -183,9 +224,38 @@ export default function Admin() {
 
   const handleLogout = () => {
     setIsLoggedIn(false);
+    setCurrentUsername("");
     setUsername("");
     setPassword("");
     setLoginError("");
+  };
+
+  const handleChangePassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      toast({
+        title: "입력 오류",
+        description: "모든 필드를 입력해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "입력 오류", 
+        description: "새 비밀번호가 일치하지 않습니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    changePasswordMutation.mutate({
+      username: currentUsername,
+      oldPassword,
+      newPassword,
+    });
   };
 
   const handleEditLink = (link: Link) => {
@@ -288,15 +358,94 @@ export default function Admin() {
       <header className="bg-card border-b border-border">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
-            <h1 className="text-2xl font-bold text-foreground">URL 관리</h1>
-            <Button
-              variant="outline"
-              onClick={handleLogout}
-              data-testid="button-admin-logout"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              로그아웃
-            </Button>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">URL 관리</h1>
+              <p className="text-sm text-muted-foreground">{currentUsername}님으로 로그인</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    data-testid="button-change-password"
+                  >
+                    <Key className="w-4 h-4 mr-2" />
+                    비밀번호 변경
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>비밀번호 변경</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleChangePassword} className="space-y-4">
+                    <div>
+                      <label htmlFor="old-password" className="block text-sm font-medium mb-2">
+                        현재 비밀번호
+                      </label>
+                      <Input
+                        id="old-password"
+                        type="password"
+                        value={oldPassword}
+                        onChange={(e) => setOldPassword(e.target.value)}
+                        required
+                        data-testid="input-old-password"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="new-password" className="block text-sm font-medium mb-2">
+                        새 비밀번호
+                      </label>
+                      <Input
+                        id="new-password"
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        required
+                        data-testid="input-new-password"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="confirm-password" className="block text-sm font-medium mb-2">
+                        새 비밀번호 확인
+                      </label>
+                      <Input
+                        id="confirm-password"
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        data-testid="input-confirm-password"
+                      />
+                    </div>
+                    <div className="flex justify-end gap-3">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setShowPasswordDialog(false)}
+                      >
+                        취소
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={changePasswordMutation.isPending}
+                        data-testid="button-submit-password-change"
+                      >
+                        {changePasswordMutation.isPending ? "변경 중..." : "변경"}
+                      </Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
+              <Button
+                variant="outline"
+                onClick={handleLogout}
+                data-testid="button-admin-logout"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                로그아웃
+              </Button>
+            </div>
           </div>
         </div>
       </header>

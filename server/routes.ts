@@ -109,13 +109,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isValid = await fileStorage.verifyAdmin(username, password);
       
       if (isValid) {
-        res.json({ success: true, message: "Login successful" });
+        res.json({ success: true, message: "Login successful", username });
       } else {
         res.status(401).json({ success: false, message: "Invalid credentials" });
       }
     } catch (error) {
       console.error("Error during admin login:", error);
       res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  // Change admin password
+  app.post("/api/admin/change-password", async (req, res) => {
+    try {
+      const { username, oldPassword, newPassword } = req.body;
+      
+      if (!username || !oldPassword || !newPassword) {
+        return res.status(400).json({ message: "모든 필드를 입력해주세요." });
+      }
+
+      if (newPassword.length < 4) {
+        return res.status(400).json({ message: "새 비밀번호는 4자 이상이어야 합니다." });
+      }
+
+      const success = await fileStorage.changeAdminPassword(username, oldPassword, newPassword);
+      
+      if (success) {
+        res.json({ success: true, message: "비밀번호가 성공적으로 변경되었습니다." });
+      } else {
+        res.status(401).json({ success: false, message: "현재 비밀번호가 올바르지 않습니다." });
+      }
+    } catch (error) {
+      console.error("Error changing admin password:", error);
+      res.status(500).json({ message: "비밀번호 변경 중 오류가 발생했습니다." });
     }
   });
 
