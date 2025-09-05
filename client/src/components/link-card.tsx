@@ -112,7 +112,7 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, cl
           )}
         </div>
         
-        <div className="p-4 bg-gradient-to-b from-sky-300 to-sky-50 dark:from-sky-800/60 dark:to-sky-900/40">
+        <div className="p-4 bg-gradient-to-b from-sky-100 to-pupple-100 dark:from-sky-800/60 dark:to-sky-900/40">
           <div className="flex items-start justify-between gap-2 mb-2">
             <h3 
               className="text-base font-medium text-foreground line-clamp-2 leading-tight flex-1" 
