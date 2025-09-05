@@ -203,7 +203,7 @@ export default function Home() {
             </div>
             <div className="p-4 space-y-3">
               <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
-                <strong>핫딜 레디!</strong>은 온라인에 흩어져 있는 특가/할인 상품 정보를 모아 보여주는 <em>정보 제공 서비스</em>입니다.
+                <strong>핫딜 레디!</strong>는 온라인에 흩어져 있는 특가/할인 상품 정보를 모아 보여주는 <em>정보 제공 서비스</em>입니다.
                 저희는 상품의 <strong>직접적인 판매자</strong>가 아니며, 결제·배송·A/S 등 구매 이후의 절차와는 무관합니다.
               </p>
               <ul className="list-disc pl-5 space-y-2 text-sm text-slate-700 dark:text-slate-200">
@@ -219,7 +219,7 @@ export default function Home() {
                 </li>
               </ul>
               <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
-                따라서 <strong>핫딜! 쇼핑</strong>은 상품의 품질, 배송, 환불·교환, 소비자 분쟁 등에 대한 <strong>법적 책임을 지지 않습니다</strong>.  
+                따라서 <strong>핫딜 레디!</strong>는 상품의 품질, 배송, 환불·교환, 소비자 분쟁 등에 대한 <strong>법적 책임을 지지 않습니다</strong>.  
                 모든 책임은 실제 판매자와 구매자에게 귀속됩니다.
               </p>
               <p className="mt-2 text-xs text-slate-500">
