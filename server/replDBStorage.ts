@@ -428,7 +428,18 @@ export class ReplDBStorage {
   async getImage(filename: string): Promise<Buffer | null> {
     try {
       const imageKey = `image_${filename}`;
-      const base64Data = await db.get(imageKey);
+      const result = await db.get(imageKey);
+      
+      // ReplDB 응답 구조 처리
+      let base64Data;
+      if (result && result.ok && result.value) {
+        base64Data = result.value;
+      } else if (result && !result.ok) {
+        return null;
+      } else {
+        base64Data = result;
+      }
+      
       if (!base64Data) return null;
       
       return Buffer.from(base64Data, 'base64');
