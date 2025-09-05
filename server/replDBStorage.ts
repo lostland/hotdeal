@@ -310,8 +310,6 @@ export class ReplDBStorage {
   async verifyAdmin(username: string, password: string): Promise<boolean> {
     try {
       const result = await db.get('admin_data');
-      console.log('ReplDB admin result:', result);
-      
       if (!result || !result.ok) return false;
       
       const adminData = result.value;
@@ -322,20 +320,10 @@ export class ReplDBStorage {
         adminData.find((admin: any) => admin.username === username) :
         (adminData.username === username ? adminData : null);
       
-      if (!admin) {
-        console.log('Admin user not found:', username);
-        return false;
-      }
-      
-      console.log('Found admin:', admin.username, 'password hash length:', admin.password?.length);
-      console.log('입력된 비밀번호:', password);
-      console.log('저장된 해시:', admin.password);
+      if (!admin) return false;
       
       const bcrypt = await import('bcrypt');
-      const compareResult = await bcrypt.compare(password, admin.password);
-      console.log('bcrypt 비교 결과:', compareResult);
-      
-      return compareResult;
+      return await bcrypt.compare(password, admin.password);
     } catch (error) {
       console.error('Failed to verify admin:', error);
       return false;
