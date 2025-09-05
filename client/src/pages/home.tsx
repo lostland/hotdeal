@@ -120,7 +120,7 @@ export default function Home() {
                     하루 최소 한 번은 꼭 확인해야 하는 특가 소식 🎉  
                   </p>
                   <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
-                    <strong>핫딜! 쇼핑</strong>에서 오늘의 새로운 딜을 한눈에 만나보세요!
+                    <strong>핫딜 레디!</strong>에서 오늘의 새로운 딜을 한눈에 만나보세요!
                   </p>
                 </div>
               </div>
@@ -144,7 +144,7 @@ export default function Home() {
           {/* ───────────────── 서비스 소개 ───────────────── */}
           <div className="rounded-2xl overflow-hidden shadow-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 mb-4">
             <div className="bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 p-3">
-              <h3 className="text-sm font-semibold text-blue-700 dark:text-blue-300">핫딜! 쇼핑 안내</h3>
+              <h3 className="text-sm font-semibold text-blue-700 dark:text-blue-300">핫딜 레디! 안내</h3>
             </div>
             <div className="p-4">
               <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
@@ -203,7 +203,7 @@ export default function Home() {
             </div>
             <div className="p-4 space-y-3">
               <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
-                <strong>핫딜! 쇼핑</strong>은 온라인에 흩어져 있는 특가/할인 상품 정보를 모아 보여주는 <em>정보 제공 서비스</em>입니다.
+                <strong>핫딜 레디!</strong>은 온라인에 흩어져 있는 특가/할인 상품 정보를 모아 보여주는 <em>정보 제공 서비스</em>입니다.
                 저희는 상품의 <strong>직접적인 판매자</strong>가 아니며, 결제·배송·A/S 등 구매 이후의 절차와는 무관합니다.
               </p>
               <ul className="list-disc pl-5 space-y-2 text-sm text-slate-700 dark:text-slate-200">
