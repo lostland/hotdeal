@@ -1,18 +1,49 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "@shared/schema";
 import { queryClient } from "@/lib/queryClient";
 import { AppHeader } from "@/components/app-header";
 import { LinkCard } from "@/components/link-card";
 import { LoadingCard } from "@/components/loading-card";
 import { ErrorCard } from "@/components/error-card";
-import { ExternalLink, Settings, Info } from "lucide-react";
+import { ExternalLink, Settings, Eye, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Home() {
   const { data: links = [], isLoading, error, refetch } = useQuery<Link[]>({
     queryKey: ["/api/links"],
   });
+
+  // 방문자수와 공유수 상태
+  const [visitorCount, setVisitorCount] = useState(0);
+  const [shareCount, setShareCount] = useState(0);
+
+  // 페이지 로드 시 방문자수 증가 및 로컬스토리지에서 카운트 불러오기
+  useEffect(() => {
+    const storedVisitorCount = parseInt(localStorage.getItem('visitorCount') || '0');
+    const storedShareCount = parseInt(localStorage.getItem('shareCount') || '0');
+    
+    const newVisitorCount = storedVisitorCount + 1;
+    setVisitorCount(newVisitorCount);
+    setShareCount(storedShareCount);
+    
+    localStorage.setItem('visitorCount', newVisitorCount.toString());
+  }, []);
+
+  // 공유수 증가 함수
+  const incrementShareCount = () => {
+    const newShareCount = shareCount + 1;
+    setShareCount(newShareCount);
+    localStorage.setItem('shareCount', newShareCount.toString());
+  };
+
+  // 전역 공유 함수로 컨텍스트에 등록
+  useEffect(() => {
+    (window as any).incrementShareCount = incrementShareCount;
+    return () => {
+      delete (window as any).incrementShareCount;
+    };
+  }, [shareCount]);
 
   // WebSocket 연결로 실시간 업데이트
   useEffect(() => {
@@ -334,18 +365,33 @@ export default function Home() {
           </div>
 
         </div>
-      </main>
 
-      {/* Admin Settings Button */}
-      <Button
-        size="icon"
-        variant="ghost"
-        className="fixed bottom-6 right-6 z-40 w-10 h-10 rounded-full opacity-30 hover:opacity-60 transition-opacity duration-200 bg-background/80 backdrop-blur-sm border border-border/40"
-        onClick={handleAdminClick}
-        data-testid="button-admin-settings"
-      >
-        <Settings className="w-4 h-4 text-muted-foreground" />
-      </Button>
+        {/* 통계 및 관리자 버튼 영역 */}
+        <div className="px-4 py-6 flex items-center justify-between">
+          {/* 방문자수와 공유수 통계 */}
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <Eye className="w-4 h-4" />
+              <span>{visitorCount.toLocaleString()}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Share2 className="w-4 h-4" />
+              <span>{shareCount.toLocaleString()}</span>
+            </div>
+          </div>
+          
+          {/* Admin 버튼 */}
+          <Button
+            size="icon"
+            variant="ghost"
+            className="w-10 h-10 rounded-full opacity-30 hover:opacity-60 transition-opacity duration-200 bg-background/80 backdrop-blur-sm border border-border/40"
+            onClick={handleAdminClick}
+            data-testid="button-admin-settings"
+          >
+            <Settings className="w-4 h-4 text-muted-foreground" />
+          </Button>
+        </div>
+      </main>
     </div>
   );
 }

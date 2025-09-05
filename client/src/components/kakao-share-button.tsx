@@ -35,6 +35,11 @@ export function KakaoShareButton({
   }, []);
 
   const handleKakaoShare = () => {
+    // 공유수 카운트 증가
+    if (typeof window !== "undefined" && (window as any).incrementShareCount) {
+      (window as any).incrementShareCount();
+    }
+    
     if (typeof window !== "undefined" && window.Kakao) {
       // 공유할 컨텐츠 구성
       const shareTitle = title || "핫딜! 쇼핑";
