@@ -27,7 +27,7 @@ export class FileStorage {
       try {
         const data = await fs.readFile(DATA_FILE, 'utf8');
         this.cache = JSON.parse(data);
-        console.log(`파일에서 ${this.cache.urls?.length || 0}개 URL과 ${this.cache.links?.length || 0}개 링크를 로드했습니다.`);
+        console.log(`파일에서 ${this.cache?.urls?.length || 0}개 URL과 ${this.cache?.links?.length || 0}개 링크를 로드했습니다.`);
         
         // 날짜 객체 복원
         if (this.cache?.links) {
@@ -366,7 +366,7 @@ export class FileStorage {
       }
       
       // 사용자 찾아서 비밀번호 변경
-      const adminIndex = adminData.findIndex(admin => admin.username === username);
+      const adminIndex = adminData.findIndex((admin: any) => admin.username === username);
       if (adminIndex === -1) return false;
       
       const bcrypt = await import('bcrypt');
@@ -379,6 +379,35 @@ export class FileStorage {
       console.error('Failed to change admin password:', error);
       return false;
     }
+  }
+
+  async getBackupData(): Promise<FileData> {
+    if (this.initPromise) {
+      await this.initPromise;
+    }
+    return {
+      urls: this.cache?.urls || [],
+      links: this.cache?.links || []
+    };
+  }
+
+  async restoreFromBackup(backupData: FileData): Promise<void> {
+    if (this.initPromise) {
+      await this.initPromise;
+    }
+    
+    // 날짜 객체 복원
+    const restoredLinks = backupData.links.map(link => ({
+      ...link,
+      createdAt: new Date(link.createdAt!)
+    }));
+    
+    this.cache = {
+      urls: backupData.urls,
+      links: restoredLinks
+    };
+    
+    await this.saveToFile();
   }
 }
 

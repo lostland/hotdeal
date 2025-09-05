@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ExternalLink, Trash2, Plus, LogOut, Edit2, Save, X, Upload, Key } from "lucide-react";
+import { ExternalLink, Trash2, Plus, LogOut, Edit2, Save, X, Upload, Key, Download, FileUp } from "lucide-react";
 import { type Link } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -29,6 +29,9 @@ export default function Admin() {
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  // 백업/복원 상태
+  const [showRestoreDialog, setShowRestoreDialog] = useState(false);
+  const [restoreFile, setRestoreFile] = useState<File | null>(null);
   const { toast } = useToast();
   
   const newImageUploaderRef = useRef<ObjectUploaderRef>(null);
@@ -201,6 +204,70 @@ export default function Admin() {
     },
   });
 
+  // 백업 다운로드 뮤테이션
+  const downloadBackupMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("GET", "/api/admin/backup");
+      return response.blob();
+    },
+    onSuccess: (blob) => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `links-backup-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "백업 완료",
+        description: "데이터 백업이 다운로드되었습니다.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "백업 실패",
+        description: error.message || "백업 생성 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // 백업 복원 뮤테이션
+  const restoreBackupMutation = useMutation({
+    mutationFn: async (backupData: any) => {
+      const response = await apiRequest("POST", "/api/admin/restore", { backupData });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (data.success) {
+        toast({
+          title: "복원 완료",
+          description: data.message,
+        });
+        setShowRestoreDialog(false);
+        setRestoreFile(null);
+        queryClient.invalidateQueries({ queryKey: ["/api/admin/urls"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/links"] });
+      } else {
+        toast({
+          title: "복원 실패",
+          description: data.message,
+          variant: "destructive",
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "복원 실패",
+        description: error.message || "데이터 복원 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     loginMutation.mutate({ username, password });
@@ -256,6 +323,52 @@ export default function Admin() {
       oldPassword,
       newPassword,
     });
+  };
+
+  const handleDownloadBackup = () => {
+    downloadBackupMutation.mutate();
+  };
+
+  const handleRestoreBackup = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!restoreFile) {
+      toast({
+        title: "파일 선택 필요",
+        description: "복원할 백업 파일을 선택해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const backupData = JSON.parse(event.target?.result as string);
+        restoreBackupMutation.mutate(backupData);
+      } catch (error) {
+        toast({
+          title: "파일 형식 오류",
+          description: "올바른 JSON 백업 파일을 선택해주세요.",
+          variant: "destructive",
+        });
+      }
+    };
+    reader.readAsText(restoreFile);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type === "application/json") {
+      setRestoreFile(file);
+    } else {
+      toast({
+        title: "파일 형식 오류",
+        description: "JSON 파일만 선택할 수 있습니다.",
+        variant: "destructive",
+      });
+      e.target.value = "";
+    }
   };
 
   const handleEditLink = (link: Link) => {
@@ -363,6 +476,74 @@ export default function Admin() {
               <p className="text-sm text-muted-foreground">{currentUsername}님으로 로그인</p>
             </div>
             <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownloadBackup}
+                disabled={downloadBackupMutation.isPending}
+                data-testid="button-download-backup"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                {downloadBackupMutation.isPending ? "다운로드 중..." : "백업 다운로드"}
+              </Button>
+              
+              <Dialog open={showRestoreDialog} onOpenChange={setShowRestoreDialog}>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    data-testid="button-restore-backup"
+                  >
+                    <FileUp className="w-4 h-4 mr-2" />
+                    백업 복원
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>백업 데이터 복원</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleRestoreBackup} className="space-y-4">
+                    <div>
+                      <label htmlFor="backup-file" className="block text-sm font-medium mb-2">
+                        백업 파일 선택 (.json)
+                      </label>
+                      <input
+                        id="backup-file"
+                        type="file"
+                        accept=".json"
+                        onChange={handleFileChange}
+                        className="w-full p-2 border border-input rounded-md bg-background"
+                        data-testid="input-backup-file"
+                      />
+                      {restoreFile && (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          선택된 파일: {restoreFile.name}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex justify-end gap-3">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setShowRestoreDialog(false);
+                          setRestoreFile(null);
+                        }}
+                      >
+                        취소
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={restoreBackupMutation.isPending || !restoreFile}
+                        data-testid="button-submit-restore"
+                      >
+                        {restoreBackupMutation.isPending ? "복원 중..." : "복원"}
+                      </Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
+              
               <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
                 <DialogTrigger asChild>
                   <Button

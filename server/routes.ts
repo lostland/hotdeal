@@ -145,6 +145,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Download backup data
+  app.get("/api/admin/backup", async (req, res) => {
+    try {
+      const backupData = await fileStorage.getBackupData();
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="links-backup-${new Date().toISOString().split('T')[0]}.json"`);
+      res.json(backupData);
+    } catch (error) {
+      console.error("Error creating backup:", error);
+      res.status(500).json({ message: "백업 생성 중 오류가 발생했습니다." });
+    }
+  });
+
+  // Restore from backup data
+  app.post("/api/admin/restore", async (req, res) => {
+    try {
+      const { backupData } = req.body;
+      
+      if (!backupData || !backupData.urls || !backupData.links) {
+        return res.status(400).json({ message: "잘못된 백업 데이터 형식입니다." });
+      }
+
+      await fileStorage.restoreFromBackup(backupData);
+      
+      res.json({ success: true, message: "데이터가 성공적으로 복원되었습니다." });
+    } catch (error) {
+      console.error("Error restoring from backup:", error);
+      res.status(500).json({ message: "데이터 복원 중 오류가 발생했습니다." });
+    }
+  });
+
   // Get URLs (admin only)
   app.get("/api/admin/urls", async (req, res) => {
     try {
