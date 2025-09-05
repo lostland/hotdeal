@@ -1,21 +1,21 @@
 {
   "urls": [
-    "https://www.11st.co.kr/products/7339388653",
     "https://smartstore.naver.com/zeniton/products/12017292999",
-    "https://brand.naver.com/cj_wellcare/products/10163541123?site_preference=device"
+    "https://brand.naver.com/cj_wellcare/products/10163541123?site_preference=device",
+    "https://www.coupang.com/vp/products/269966854?itemId=847729615&vendorItemId=5155410732&src=1191000&spec=10999999&addtag=400&ctag=269966854&lptag=CFM46992555&itime=20250905164847&pageType=PRODUCT&pageValue=269966854&wPcid=17568334049684776361739&wRef=&wTime=20250905164847&redirect=landing&mcid=f6de96a0e9254fbe8fa7ccacfcce3f4f&sharesource=sharebutton&style=&isshortened=Y"
   ],
   "links": [
     {
-      "id": "3c3a63bc-1a5c-466f-9ca9-85777deebbd8",
-      "url": "https://www.11st.co.kr/products/7339388653",
-      "title": "[11번가] [프레쉬킹] 아삭한 아오리 여름 사과 썸머킹 5kg",
-      "description": "과일>국산과일>사과, 가격 : 19,900원",
-      "image": "https://cdn.011st.com/11dims/resize/600x600/quality/75/11src/product/7339388653/B.jpg?559000000",
-      "customImage": null,
-      "domain": "www.11st.co.kr",
-      "price": "19,900원",
-      "note": "🍎 프리미엄 여름사과 특가! 달콤함 최고",
-      "createdAt": "2025-09-03T07:57:18.580Z"
+      "id": "06f2ebe4-69ee-4cb2-acf9-d9c53a5d8179",
+      "url": "https://brand.naver.com/cj_wellcare/products/10163541123?site_preference=device",
+      "title": "",
+      "description": "",
+      "image": "",
+      "customImage": "/objects/uploads/f9080260-6ea0-4ff3-89dd-ef025cb05547",
+      "domain": "brand.naver.com",
+      "price": null,
+      "note": null,
+      "createdAt": "2025-09-04T06:08:04.906Z"
     },
     {
       "id": "a49fa025-d340-4c73-b894-72896feb82e8",
@@ -30,16 +30,16 @@
       "createdAt": "2025-09-03T08:26:46.467Z"
     },
     {
-      "id": "06f2ebe4-69ee-4cb2-acf9-d9c53a5d8179",
-      "url": "https://brand.naver.com/cj_wellcare/products/10163541123?site_preference=device",
-      "title": "",
-      "description": "",
-      "image": "",
-      "customImage": "/objects/uploads/f9080260-6ea0-4ff3-89dd-ef025cb05547",
-      "domain": "brand.naver.com",
-      "price": null,
+      "id": "9d03e96f-aae5-4594-9b88-deffe7a0e297",
+      "url": "https://www.coupang.com/vp/products/269966854?itemId=847729615&vendorItemId=5155410732&src=1191000&spec=10999999&addtag=400&ctag=269966854&lptag=CFM46992555&itime=20250905164847&pageType=PRODUCT&pageValue=269966854&wPcid=17568334049684776361739&wRef=&wTime=20250905164847&redirect=landing&mcid=f6de96a0e9254fbe8fa7ccacfcce3f4f&sharesource=sharebutton&style=&isshortened=Y",
+      "title": "함소아 키득키득 배도라지 주스 100ml - 과일/야채혼합주스 | 쿠팡",
+      "description": "현재 별점 4.8점, 리뷰 6441개를 가진 함소아 키득키득 배도라지 주스 100ml! 지금 쿠팡에서 더 저렴하고 다양한 과일/야채혼합주스 제품들을 확인해보세요.",
+      "image": "https://thumbnail.coupangcdn.com/thumbnails/remote/492x492ex/image/retail/images/8502936498121150-bb0e1e68-8583-4498-b0f7-4ffccd68e82d.jpg",
+      "customImage": null,
+      "domain": "www.coupang.com",
+      "price": "6900원",
       "note": null,
-      "createdAt": "2025-09-04T06:08:04.906Z"
+      "createdAt": "2025-09-05T08:03:42.185Z"
     }
   ]
 }
