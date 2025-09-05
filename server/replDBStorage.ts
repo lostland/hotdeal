@@ -71,7 +71,7 @@ export class ReplDBStorage {
       } catch (error) {
         // 기본 관리자 계정 생성
         const existingAdminData = await db.get('admin_data');
-        if (!existingAdminData) {
+        if (!existingAdminData || !existingAdminData.ok) {
           const defaultAdminData = [
             {
               username: 'admin',
