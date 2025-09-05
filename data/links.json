@@ -1,4 +1,45 @@
 {
-  "urls": [],
-  "links": []
+  "urls": [
+    "https://www.11st.co.kr/products/7339388653",
+    "https://smartstore.naver.com/zeniton/products/12017292999",
+    "https://brand.naver.com/cj_wellcare/products/10163541123?site_preference=device"
+  ],
+  "links": [
+    {
+      "id": "3c3a63bc-1a5c-466f-9ca9-85777deebbd8",
+      "url": "https://www.11st.co.kr/products/7339388653",
+      "title": "[11번가] [프레쉬킹] 아삭한 아오리 여름 사과 썸머킹 5kg",
+      "description": "과일>국산과일>사과, 가격 : 19,900원",
+      "image": "https://cdn.011st.com/11dims/resize/600x600/quality/75/11src/product/7339388653/B.jpg?559000000",
+      "customImage": null,
+      "domain": "www.11st.co.kr",
+      "price": "19,900원",
+      "note": "🍎 프리미엄 여름사과 특가! 달콤함 최고",
+      "createdAt": "2025-09-03T07:57:18.580Z"
+    },
+    {
+      "id": "a49fa025-d340-4c73-b894-72896feb82e8",
+      "url": "https://smartstore.naver.com/zeniton/products/12017292999",
+      "title": "",
+      "description": "",
+      "image": "",
+      "customImage": "/objects/uploads/a5b0993a-fa66-46ed-9a7a-cf19bad3d154",
+      "domain": "smartstore.naver.com",
+      "price": null,
+      "note": "제니튼 백치약 100g 3개입 (미니치약 5개 증정) 25,800원",
+      "createdAt": "2025-09-03T08:26:46.467Z"
+    },
+    {
+      "id": "06f2ebe4-69ee-4cb2-acf9-d9c53a5d8179",
+      "url": "https://brand.naver.com/cj_wellcare/products/10163541123?site_preference=device",
+      "title": "",
+      "description": "",
+      "image": "",
+      "customImage": "/objects/uploads/f9080260-6ea0-4ff3-89dd-ef025cb05547",
+      "domain": "brand.naver.com",
+      "price": null,
+      "note": null,
+      "createdAt": "2025-09-04T06:08:04.906Z"
+    }
+  ]
 }
