@@ -93,7 +93,18 @@ export class ReplDBStorage {
 
   private async readLinksData(): Promise<FileData> {
     try {
-      const data = await db.get('links_data');
+      const result = await db.get('links_data');
+      
+      // ReplDB 응답 구조 처리
+      let data;
+      if (result && result.ok && result.value) {
+        data = result.value;
+      } else if (result && !result.ok) {
+        data = null;
+      } else {
+        data = result;
+      }
+      
       if (!data) {
         return { urls: [], links: [] };
       }
@@ -310,9 +321,17 @@ export class ReplDBStorage {
   async verifyAdmin(username: string, password: string): Promise<boolean> {
     try {
       const result = await db.get('admin_data');
-      if (!result || !result.ok) return false;
       
-      const adminData = result.value;
+      // ReplDB 응답 구조 처리
+      let adminData;
+      if (result && result.ok && result.value) {
+        adminData = result.value;
+      } else if (result && !result.ok) {
+        return false;
+      } else {
+        adminData = result;
+      }
+      
       if (!adminData) return false;
       
       // 배열로 변경된 admin 데이터에서 사용자 찾기
@@ -332,7 +351,18 @@ export class ReplDBStorage {
 
   async changeAdminPassword(username: string, oldPassword: string, newPassword: string): Promise<boolean> {
     try {
-      let adminData = await db.get('admin_data');
+      const result = await db.get('admin_data');
+      
+      // ReplDB 응답 구조 처리
+      let adminData;
+      if (result && result.ok && result.value) {
+        adminData = result.value;
+      } else if (result && !result.ok) {
+        return false;
+      } else {
+        adminData = result;
+      }
+      
       if (!adminData) return false;
       
       // 기존 비밀번호 확인
