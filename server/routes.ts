@@ -1,11 +1,10 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer } from 'ws';
-import { fileStorage } from "./fileStorage";
+import { replDBStorage } from "./replDBStorage";
 import { insertLinkSchema } from "@shared/schema";
 import { fetchMetadata } from "./metadata";
 import multer from 'multer';
-import fs from 'fs/promises';
 import path from 'path';
 import { randomUUID } from 'crypto';
 
@@ -63,26 +62,9 @@ function queueMetadataRequest(url: string): Promise<any> {
   });
 }
 
-// Multer 설정 - 이미지 파일 업로드
-const storage = multer.diskStorage({
-  destination: async (req, file, cb) => {
-    const uploadDir = path.join(process.cwd(), 'data', 'images');
-    try {
-      await fs.mkdir(uploadDir, { recursive: true });
-      cb(null, uploadDir);
-    } catch (error) {
-      cb(error as Error, '');
-    }
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const filename = `${randomUUID()}${ext}`;
-    cb(null, filename);
-  }
-});
-
+// Multer 설정 - 메모리 스토리지로 변경 (ReplDB 저장용)
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: {
     fileSize: 10 * 1024 * 1024 // 10MB
   },
@@ -99,7 +81,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all links
   app.get("/api/links", async (req, res) => {
     try {
-      const links = await fileStorage.getAllLinks();
+      const links = await replDBStorage.getAllLinks();
       res.json(links);
     } catch (error) {
       console.error("Error fetching links:", error);
@@ -112,7 +94,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { linkId } = req.params;
       
-      const links = await fileStorage.getAllLinks();
+      const links = await replDBStorage.getAllLinks();
       const link = links.find(l => l.id === linkId);
       
       if (!link) {
@@ -141,7 +123,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Username and password required" });
       }
 
-      const isValid = await fileStorage.verifyAdmin(username, password);
+      const isValid = await replDBStorage.verifyAdmin(username, password);
       
       if (isValid) {
         res.json({ success: true, message: "Login successful", username });
@@ -167,7 +149,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "새 비밀번호는 4자 이상이어야 합니다." });
       }
 
-      const success = await fileStorage.changeAdminPassword(username, oldPassword, newPassword);
+      const success = await replDBStorage.changeAdminPassword(username, oldPassword, newPassword);
       
       if (success) {
         res.json({ success: true, message: "비밀번호가 성공적으로 변경되었습니다." });
@@ -183,7 +165,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Download backup data
   app.get("/api/admin/backup", async (req, res) => {
     try {
-      const backupData = await fileStorage.getBackupData();
+      const backupData = await replDBStorage.getBackupData();
       res.setHeader('Content-Type', 'application/json');
       res.setHeader('Content-Disposition', `attachment; filename="links-backup-${new Date().toISOString().split('T')[0]}.json"`);
       res.json(backupData);
@@ -202,7 +184,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "잘못된 백업 데이터 형식입니다." });
       }
 
-      await fileStorage.restoreFromBackup(backupData);
+      await replDBStorage.restoreFromBackup(backupData);
       
       res.json({ success: true, message: "데이터가 성공적으로 복원되었습니다." });
     } catch (error) {
@@ -214,7 +196,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get URLs (admin only)
   app.get("/api/admin/urls", async (req, res) => {
     try {
-      const urls = await fileStorage.getUrls();
+      const urls = await replDBStorage.getUrls();
       res.json(urls);
     } catch (error) {
       console.error("Error fetching URLs:", error);
@@ -222,36 +204,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // 업로드된 이미지 서빙
-  app.get("/images/:filename", async (req, res) => {
+  // ReplDB 저장된 이미지 서빙
+  app.get("/api/images/:filename", async (req, res) => {
     try {
       const filename = req.params.filename;
-      const imagePath = path.join(process.cwd(), 'data', 'images', filename);
+      const imageBuffer = await replDBStorage.getImage(filename);
       
-      // 파일 존재 확인
-      await fs.access(imagePath);
+      if (!imageBuffer) {
+        return res.status(404).json({ message: "Image not found" });
+      }
       
-      // 이미지 파일 전송
-      res.sendFile(imagePath);
+      // 이미지 MIME 타입 설정 (확장자로 추정)
+      const ext = path.extname(filename).toLowerCase();
+      let contentType = 'image/jpeg'; // 기본값
+      if (ext === '.png') contentType = 'image/png';
+      else if (ext === '.gif') contentType = 'image/gif';
+      else if (ext === '.webp') contentType = 'image/webp';
+      
+      res.set('Content-Type', contentType);
+      res.send(imageBuffer);
     } catch (error) {
       console.error("Error serving image:", error);
       res.status(404).json({ message: "Image not found" });
     }
   });
 
-  // 이미지 업로드 엔드포인트
+  // ReplDB 이미지 업로드 엔드포인트
   app.post("/api/images/upload", upload.single('image'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "이미지 파일이 필요합니다." });
       }
       
-      // 업로드된 파일 정보 반환
-      const imageUrl = `/images/${req.file.filename}`;
+      // 파일명 생성
+      const ext = path.extname(req.file.originalname);
+      const filename = `${randomUUID()}${ext}`;
+      
+      // ReplDB에 이미지 저장
+      const imageUrl = await replDBStorage.saveImage(req.file.buffer, filename);
+      
       res.json({ 
         success: true,
         imageUrl: imageUrl,
-        filename: req.file.filename 
+        filename: filename 
       });
     } catch (error) {
       console.error("Error uploading image:", error);
@@ -271,7 +266,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 이미지 URL이 있으면 그대로 사용 (로컬 파일 경로)
       let normalizedImage = customImage;
 
-      const newLink = await fileStorage.addUrl(url, note, normalizedImage);
+      const newLink = await replDBStorage.addUrl(url, note, normalizedImage);
       
       // WebSocket으로 실시간 업데이트 브로드캐스트
       if (wss) {
@@ -305,7 +300,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 이미지 URL이 있으면 그대로 사용 (로컬 파일 경로)
       let normalizedImage = customImage;
 
-      const updatedLink = await fileStorage.updateUrl(oldUrl, newUrl, note, normalizedImage);
+      const updatedLink = await replDBStorage.updateUrl(oldUrl, newUrl, note, normalizedImage);
       
       // WebSocket으로 실시간 업데이트 브로드캐스트
       if (wss) {
@@ -342,7 +337,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "URL is required" });
       }
 
-      const removed = await fileStorage.removeUrl(url);
+      const removed = await replDBStorage.removeUrl(url);
       
       if (!removed) {
         return res.status(404).json({ message: "URL not found" });
