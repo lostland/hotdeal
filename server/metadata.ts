@@ -17,60 +17,53 @@ export async function unshortenWithCurl(url: string) {
   const { stdout } = await execFileAsync("curl", args, { timeout: 15000 });
   return stdout.trim();
 }
+import puppeteer from "puppeteer";
 
-import puppeteer from "puppeteer-extra";
-import StealthPlugin from "puppeteer-extra-plugin-stealth";
-
-puppeteer.use(StealthPlugin());
-
-export async function unshortenWithBrowser(url: string) {
+export async function unshorten(url: string): Promise<string> {
   const browser = await puppeteer.launch({
-    headless: "new",
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage",
-    ],
+    headless: "new", // 필요시 false로 바꾸면 실제 브라우저 창 보임
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
   });
+
   try {
     const page = await browser.newPage();
 
+    // UA / Accept-Language 설정 (쿠팡 in-app 차단 회피용)
     await page.setUserAgent(
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-      "(KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+        "(KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
     );
     await page.setExtraHTTPHeaders({
       "Accept-Language": "ko-KR,ko;q=0.9",
-      "Referer": "https://www.google.com/",
+      Referer: "https://www.google.com/",
     });
 
-    // 이미지/폰트/미디어 차단 → 빠름
+    // 불필요 리소스 차단 → 속도 ↑
     await page.setRequestInterception(true);
-    page.on("request", req => {
-      const type = req.resourceType();
-      if (["image","media","font","stylesheet"].includes(type)) req.abort();
+    page.on("request", (req) => {
+      if (["image", "stylesheet", "font", "media"].includes(req.resourceType()))
+        req.abort();
       else req.continue();
     });
 
-    const resp = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 15000 });
-    // 네트워크 리디렉트 체인
-    const chain = resp?.request().redirectChain().map(r => r.url()) ?? [];
-    let finalUrl = page.url();
+    // URL 열기
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 15000 });
 
-    // 메타/JS 리디렉트 보조
+    // <meta http-equiv="refresh"> 리디렉트 보조 처리
     const metaUrl = await page.evaluate(() => {
-      const m = document.querySelector('meta[http-equiv="refresh"]') as HTMLMetaElement | null;
+      const m = document.querySelector<HTMLMetaElement>(
+        "meta[http-equiv='refresh']"
+      );
       if (!m?.content) return null;
       const m2 = /url=([^;]+)/i.exec(m.content);
       return m2 ? m2[1].trim() : null;
     });
     if (metaUrl) {
-      const abs = new URL(metaUrl, finalUrl).toString();
+      const abs = new URL(metaUrl, page.url()).toString();
       await page.goto(abs, { waitUntil: "domcontentloaded", timeout: 15000 });
-      finalUrl = page.url();
     }
 
-    return { finalUrl, chain: [...chain, finalUrl] };
+    return page.url(); // 최종 URL
   } finally {
     await browser.close();
   }
