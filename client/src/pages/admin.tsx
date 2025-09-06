@@ -778,30 +778,9 @@ export default function Admin() {
                                 <strong>제목:</strong> {link.title}
                               </div>
                             )}
-                            <ExternalLink className="w-4 h-4 flex-shrink-0" />
-                            
+                                                       
                           </a>
-                          <div className="flex gap-2 ml-4">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleEditLink(link)}
-                              data-testid={`button-edit-${link.id}`}
-                            >
-                              <Edit2 className="w-4 h-4" />
-                              수정
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => handleRemoveUrl(link.url)}
-                              disabled={removeUrlMutation.isPending}
-                              data-testid={`button-remove-${link.id}`}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              삭제
-                            </Button>
-                          </div>
+                          
                         </div>
                         {link.note && (
                           <div className="text-sm text-muted-foreground bg-muted/50 p-2 rounded">
@@ -814,6 +793,29 @@ export default function Admin() {
                             <strong>커스텀 이미지:</strong> 설정됨
                           </div>
                         )}
+
+                        <div className="flex gap-2 ml-4">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditLink(link)}
+                            data-testid={`button-edit-${link.id}`}
+                          >
+                            <Edit2 className="w-4 h-4" />
+                            수정
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleRemoveUrl(link.url)}
+                            disabled={removeUrlMutation.isPending}
+                            data-testid={`button-remove-${link.id}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            삭제
+                          </Button>
+                        </div>
+                        
                       </div>
                     )}
                   </div>
