@@ -291,7 +291,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Update URL (admin only)
   app.put("/api/admin/urls", async (req, res) => {
     try {
-      const { oldUrl, newUrl, note, customImage } = req.body;
+      const { oldUrl, newUrl, title, note, customImage } = req.body;
       
       if (!oldUrl || !newUrl) {
         return res.status(400).json({ message: "Old URL and new URL are required" });
@@ -300,7 +300,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 이미지 URL이 있으면 그대로 사용 (로컬 파일 경로)
       let normalizedImage = customImage;
 
-      const updatedLink = await replDBStorage.updateUrl(oldUrl, newUrl, note, normalizedImage);
+      const updatedLink = await replDBStorage.updateUrl(oldUrl, newUrl, title, note, normalizedImage);
       
       // WebSocket으로 실시간 업데이트 브로드캐스트
       if (wss) {

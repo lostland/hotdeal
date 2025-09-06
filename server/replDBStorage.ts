@@ -255,7 +255,7 @@ export class ReplDBStorage {
     return data.urls || [];
   }
 
-  async updateUrl(oldUrl: string, newUrl: string, note?: string | null, customImage?: string | null): Promise<Link> {
+  async updateUrl(oldUrl: string, newUrl: string, title?: string | null, note?: string | null, customImage?: string | null): Promise<Link> {
     const data = await this.readLinksData();
 
     // 기존 URL이 존재하는지 확인
@@ -285,7 +285,7 @@ export class ReplDBStorage {
         data.links[linkIndex] = {
           ...data.links[linkIndex],
           url: newUrl,
-          title: metadata.title,
+          title: title || metadata.title,
           description: metadata.description,
           image: metadata.image,
           customImage: customImage || null,
@@ -304,12 +304,14 @@ export class ReplDBStorage {
           ...data.links[linkIndex],
           url: newUrl,
           ...fallbackData,
+          title: title || fallbackData.title,
           customImage: customImage || null,
           note: note || null
         };
       }
     } else {
-      // URL이 같으면 note와 customImage만 업데이트
+      // URL이 같으면 title, note, customImage 업데이트
+      if (title) data.links[linkIndex].title = title;
       data.links[linkIndex].note = note || null;
       data.links[linkIndex].customImage = customImage || null;
     }

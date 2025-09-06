@@ -22,6 +22,7 @@ export default function Admin() {
   const [loginError, setLoginError] = useState("");
   const [editingLink, setEditingLink] = useState<Link | null>(null);
   const [editUrl, setEditUrl] = useState("");
+  const [editTitle, setEditTitle] = useState("");
   const [editNote, setEditNote] = useState("");
   const [editCustomImage, setEditCustomImage] = useState("");
   // 비밀번호 변경 상태
@@ -113,7 +114,7 @@ export default function Admin() {
 
   // URL 수정 뮤테이션
   const updateUrlMutation = useMutation({
-    mutationFn: async (data: { oldUrl: string; newUrl: string; note?: string; customImage?: string }) => {
+    mutationFn: async (data: { oldUrl: string; newUrl: string; title?: string; note?: string; customImage?: string }) => {
       // 편집 중 드래그 앤 드롭된 파일이 있으면 먼저 업로드
       const selectedFile = editImageUploaderRef.current?.getSelectedFile();
       let customImageUrl = data.customImage;
@@ -374,6 +375,7 @@ export default function Admin() {
   const handleEditLink = (link: Link) => {
     setEditingLink(link);
     setEditUrl(link.url);
+    setEditTitle(link.title || "");
     setEditNote(link.note || "");
     setEditCustomImage(link.customImage || "");
   };
@@ -381,6 +383,7 @@ export default function Admin() {
   const handleCancelEdit = () => {
     setEditingLink(null);
     setEditUrl("");
+    setEditTitle("");
     setEditNote("");
     setEditCustomImage("");
     editImageUploaderRef.current?.clearSelectedFile();
@@ -391,6 +394,7 @@ export default function Admin() {
       updateUrlMutation.mutate({
         oldUrl: editingLink.url,
         newUrl: editUrl.trim(),
+        title: editTitle.trim() || undefined,
         note: editNote.trim() || undefined,
         customImage: editCustomImage.trim() || undefined
       });
@@ -710,6 +714,14 @@ export default function Admin() {
                             value={editUrl}
                             onChange={(e) => setEditUrl(e.target.value)}
                             placeholder="https://example.com"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">제목</label>
+                          <Input
+                            value={editTitle}
+                            onChange={(e) => setEditTitle(e.target.value)}
+                            placeholder="상품 제목"
                           />
                         </div>
                         <div>
