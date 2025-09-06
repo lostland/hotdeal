@@ -510,7 +510,7 @@ export default function Admin() {
                 data-testid="button-download-backup"
               >
                 <Download className="w-4 h-4 mr-2" />
-                {downloadBackupMutation.isPending ? "다운로드 중..." : "백업 다운로드"}
+                {downloadBackupMutation.isPending ? "다운로드 중..." : "백업"}
               </Button>
               
               <Dialog open={showRestoreDialog} onOpenChange={setShowRestoreDialog}>
@@ -521,7 +521,7 @@ export default function Admin() {
                     data-testid="button-restore-backup"
                   >
                     <FileUp className="w-4 h-4 mr-2" />
-                    백업 복원
+                    복원
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-md">
@@ -659,7 +659,7 @@ export default function Admin() {
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* URL 추가 폼 */}
-        <Card>
+        <Card className="p-2 md:p-4 lg:p-6">
           <CardHeader>
             <CardTitle>새 URL 추가</CardTitle>
           </CardHeader>
@@ -720,7 +720,7 @@ export default function Admin() {
         </Card>
 
         {/* URL 목록 */}
-        <Card>
+        <Card className="p-2 md:p-4 lg:p-6">
           <CardHeader>
             <CardTitle>등록된 URL 목록</CardTitle>
           </CardHeader>
