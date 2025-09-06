@@ -11,6 +11,7 @@ interface ObjectUploaderProps {
   buttonClassName?: string;
   children: ReactNode;
   showDropZone?: boolean;
+  backgroundImageUrl?: string;
 }
 
 export interface ObjectUploaderRef {
@@ -27,6 +28,7 @@ export const ObjectUploader = forwardRef<ObjectUploaderRef, ObjectUploaderProps>
   buttonClassName,
   children,
   showDropZone = false,
+  backgroundImageUrl,
 }, ref) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -131,17 +133,27 @@ export const ObjectUploader = forwardRef<ObjectUploaderRef, ObjectUploaderProps>
       <div className="space-y-4">
         <div
           className={`
-            relative border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200
+            relative border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200 min-h-[200px]
             ${isDragOver 
               ? 'border-primary bg-primary/5 scale-105' 
               : 'border-muted-foreground/25 hover:border-primary/50'
             }
             ${selectedFile ? 'bg-muted/30' : ''}
           `}
+          style={backgroundImageUrl ? {
+            backgroundImage: `url(${backgroundImageUrl})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
+          } : {}}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
+          {/* 배경 이미지가 있을 때 오버레이 */}
+          {backgroundImageUrl && (
+            <div className="absolute inset-0 bg-black/30 rounded-lg" />
+          )}
           <input
             ref={fileInputRef}
             type="file"
@@ -150,50 +162,52 @@ export const ObjectUploader = forwardRef<ObjectUploaderRef, ObjectUploaderProps>
             className="hidden"
           />
           
-          {selectedFile ? (
-            <div className="flex flex-col items-center gap-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Image className="w-4 h-4" />
-                <span className="font-medium">{selectedFile.name}</span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={removeFile}
-                  className="p-1 h-auto"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                파일이 선택되었습니다. 저장 버튼을 눌러 업로드하세요.
-              </p>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center gap-4">
-              <div className={`
-                p-4 rounded-full transition-all duration-200
-                ${isDragOver ? 'bg-primary/10 scale-110' : 'bg-muted/50'}
-              `}>
-                <Upload className={`w-8 h-8 transition-colors ${isDragOver ? 'text-primary' : 'text-muted-foreground'}`} />
-              </div>
-              <div>
-                <p className="text-sm font-medium mb-1">
-                  이곳에 이미지 파일을 드래그 앤 드롭하세요
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  또는{" "}
-                  <button
+          <div className={`relative z-10 ${backgroundImageUrl ? 'text-white' : ''}`}>
+            {selectedFile ? (
+              <div className="flex flex-col items-center gap-4">
+                <div className={`flex items-center gap-2 text-sm ${backgroundImageUrl ? 'text-white' : 'text-muted-foreground'}`}>
+                  <Image className="w-4 h-4" />
+                  <span className="font-medium">{selectedFile.name}</span>
+                  <Button
                     type="button"
-                    onClick={handleButtonClick}
-                    className="text-primary hover:underline"
+                    variant="ghost"
+                    size="sm"
+                    onClick={removeFile}
+                    className={`p-1 h-auto ${backgroundImageUrl ? 'text-white hover:bg-white/20' : ''}`}
                   >
-                    파일 선택
-                  </button>
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+                <p className={`text-xs ${backgroundImageUrl ? 'text-white' : 'text-muted-foreground'}`}>
+                  파일이 선택되었습니다. 저장 버튼을 눌러 업로드하세요.
                 </p>
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="flex flex-col items-center gap-4">
+                <div className={`
+                  p-4 rounded-full transition-all duration-200
+                  ${isDragOver ? 'bg-primary/10 scale-110' : backgroundImageUrl ? 'bg-white/20' : 'bg-muted/50'}
+                `}>
+                  <Upload className={`w-8 h-8 transition-colors ${isDragOver ? 'text-primary' : backgroundImageUrl ? 'text-white' : 'text-muted-foreground'}`} />
+                </div>
+                <div>
+                  <p className="text-sm font-medium mb-1">
+                    이곳에 이미지 파일을 드래그 앤 드롭하세요
+                  </p>
+                  <p className={`text-xs ${backgroundImageUrl ? 'text-white' : 'text-muted-foreground'}`}>
+                    또는{" "}
+                    <button
+                      type="button"
+                      onClick={handleButtonClick}
+                      className={`${backgroundImageUrl ? 'text-white hover:underline' : 'text-primary hover:underline'}`}
+                    >
+                      파일 선택
+                    </button>
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );

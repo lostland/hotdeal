@@ -2,10 +2,12 @@ import { useState, useEffect, useRef } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ExternalLink, Trash2, Plus, LogOut, Edit2, Save, X, Upload, Key, Download, FileUp } from "lucide-react";
+import { ExternalLink, Trash2, Plus, LogOut, Edit2, Save, X, Upload, Key, Download, FileUp, LinkIcon, ImageIcon , StickyNote } from "lucide-react";
 import { type Link } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -19,12 +21,14 @@ export default function Admin() {
   const [newUrl, setNewUrl] = useState("");
   const [newNote, setNewNote] = useState("");
   const [newCustomImage, setNewCustomImage] = useState("");
+  const [newImagePreview, setNewImagePreview] = useState("");
   const [loginError, setLoginError] = useState("");
   const [editingLink, setEditingLink] = useState<Link | null>(null);
   const [editUrl, setEditUrl] = useState("");
   const [editTitle, setEditTitle] = useState("");
   const [editNote, setEditNote] = useState("");
   const [editCustomImage, setEditCustomImage] = useState("");
+  const [editImagePreview, setEditImagePreview] = useState("");
   // 비밀번호 변경 상태
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [oldPassword, setOldPassword] = useState("");
@@ -95,6 +99,7 @@ export default function Admin() {
       setNewUrl("");
       setNewNote("");
       setNewCustomImage("");
+      setNewImagePreview("");
       newImageUploaderRef.current?.clearSelectedFile();
       toast({
         title: "URL 추가 완료",
@@ -378,6 +383,7 @@ export default function Admin() {
     setEditTitle(link.title || "");
     setEditNote(link.note || "");
     setEditCustomImage(link.customImage || "");
+    setEditImagePreview(link.customImage || "");
   };
 
   const handleCancelEdit = () => {
@@ -386,6 +392,7 @@ export default function Admin() {
     setEditTitle("");
     setEditNote("");
     setEditCustomImage("");
+    setEditImagePreview("");
     editImageUploaderRef.current?.clearSelectedFile();
   };
 
@@ -402,6 +409,29 @@ export default function Admin() {
   };
 
   // 이미지 업로드 핸들러
+  const handleNewImageFileSelected = (file: File | null) => {
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setNewImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setNewImagePreview("");
+    }
+  };
+
+  const handleEditImageFileSelected = (file: File | null) => {
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setEditImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setEditImagePreview(editingLink?.customImage || "");
+    }
+  };
 
 
   // 로그인 페이지
@@ -634,7 +664,7 @@ export default function Admin() {
             <CardTitle>새 URL 추가</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleAddUrl} className="space-y-4">
+            <form onSubmit={handleAddUrl} className="space-y-4 bg-indigo-100 rounded-lg p-2">
               <div>
                 <label htmlFor="new-url" className="block text-sm font-medium mb-2">
                   URL
@@ -669,6 +699,8 @@ export default function Admin() {
                 <ObjectUploader
                   ref={newImageUploaderRef}
                   showDropZone={true}
+                  backgroundImageUrl={newImagePreview}
+                  onFileSelected={handleNewImageFileSelected}
                 >
                   <Upload className="w-4 h-4 mr-2" />
                   이미지 업로드
@@ -698,125 +730,147 @@ export default function Admin() {
                 등록된 URL이 없습니다.
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-1">
                 {links.map((link) => (
                   <div
                     key={link.id}
-                    className="p-4 border border-border rounded-lg"
+                    className="p-1 border border-border rounded-lg"
                     data-testid={`link-item-${link.id}`}
                   >
                     {editingLink && editingLink.id === link.id ? (
                       // 편집 모드
-                      <div className="space-y-3">
-                        <div>
-                          <label className="block text-sm font-medium mb-1">URL</label>
-                          <Input
-                            value={editUrl}
-                            onChange={(e) => setEditUrl(e.target.value)}
-                            placeholder="https://example.com"
-                          />
+                      <div className="space-y-2 bg-blue-200 rounded-lg p-2">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">편집 모드</Badge>
+                          <span className="text-xs text-muted-foreground">필드를 수정한 뒤 저장하세요</span>
                         </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-1">제목</label>
-                          <Input
-                            value={editTitle}
-                            onChange={(e) => setEditTitle(e.target.value)}
-                            placeholder="상품 제목"
-                          />
+
+                        <Separator className="my-2" />
+
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
+                          <label className="md:col-span-2 text-xs text-muted-foreground">URL</label>
+                          <div className="md:col-span-10">
+                            <Input
+                              className="h-8 text-sm"
+                              value={editUrl}
+                              onChange={(e) => setEditUrl(e.target.value)}
+                              placeholder="https://example.com"
+                            />
+                          </div>
+
+                          <label className="md:col-span-2 text-xs text-muted-foreground">제목</label>
+                          <div className="md:col-span-10">
+                            <Input
+                              className="h-8 text-sm"
+                              value={editTitle}
+                              onChange={(e) => setEditTitle(e.target.value)}
+                              placeholder="상품 제목"
+                            />
+                          </div>
+
+                          <label className="md:col-span-2 text-xs text-muted-foreground">참고사항</label>
+                          <div className="md:col-span-10">
+                            <Input
+                              className="h-8 text-sm"
+                              value={editNote}
+                              onChange={(e) => setEditNote(e.target.value)}
+                              placeholder="특가, 할인정보, 기타 메모 등..."
+                            />
+                          </div>
+
+                          <label className="md:col-span-2 text-xs text-muted-foreground">커스텀 이미지</label>
+                          <div className="md:col-span-10">
+                            <div className="flex items-center gap-2 rounded-lg border border-dashed p-2 text-xs text-muted-foreground">
+                              <ObjectUploader 
+                                ref={editImageUploaderRef} 
+                                showDropZone={true}
+                                backgroundImageUrl={editImagePreview}
+                                onFileSelected={handleEditImageFileSelected}
+                              >
+                                <Upload className="w-4 h-4 mr-2" />이미지 업로드
+                              </ObjectUploader>
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-1">참고사항</label>
-                          <Input
-                            value={editNote}
-                            onChange={(e) => setEditNote(e.target.value)}
-                            placeholder="특가, 할인정보, 기타 메모 등..."
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-1">커스텀 이미지</label>
-                          <ObjectUploader
-                            ref={editImageUploaderRef}
-                            showDropZone={true}
-                          >
-                            <Upload className="w-4 h-4 mr-2" />
-                            이미지 업로드
-                          </ObjectUploader>
-                        </div>
-                        <div className="flex gap-2">
+
+                        <div className="flex items-center justify-end gap-2 pt-1">
                           <Button
                             size="sm"
                             onClick={handleSaveEdit}
-                            disabled={!editUrl.trim() || updateUrlMutation.isPending}
+                            disabled={!editUrl?.trim() || updateUrlMutation?.isPending}
                           >
                             <Save className="w-4 h-4 mr-1" />
-                            {updateUrlMutation.isPending ? "저장 중..." : "저장"}
+                            {updateUrlMutation?.isPending ? "저장 중..." : "저장"}
                           </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={handleCancelEdit}
-                          >
-                            <X className="w-4 h-4 mr-1" />
-                            취소
+                          <Button variant="outline" size="sm" onClick={handleCancelEdit}>
+                            <X className="w-4 h-4 mr-1" />취소
                           </Button>
                         </div>
                       </div>
+                        
                     ) : (
-                      // 일반 표시 모드
-                      <div className="space-y-2">
-                        
-                        <div className="flex items-center justify-between">
-                          <a
-                            href={link.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary hover:underline break-all flex items-center gap-2 flex-1"
-                            data-testid="link-url"
-                          >
-                            {link.title && (
-                              <div className="text-sm text-muted-foreground">
-                                <strong>제목:</strong> {link.title}
+                        // 일반 표시 모드
+                        <div className="space-y-2 bg-blue-200 rounded-lg p-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <a
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 min-w-0 flex-1 group"
+                              data-testid="link-url"
+                            >
+                              
+                              <div className="min-w-0">
+                                {link.title ? (
+                                  <div className="text-m text-foreground font-medium truncate" title={link.title}>
+                                    {link.title}
+                                  </div>
+                                ) : (
+                                  <div className="text-sm text-foreground font-medium truncate" title={link.url}>
+                                    {link.url}
+                                  </div>
+                                )}
+                                <div className="text-xs text-muted-foreground truncate">{link.url}</div>
                               </div>
-                            )}
-                                                       
-                          </a>
-                          
-                        </div>
-                        {link.note && (
-                          <div className="text-sm text-muted-foreground bg-muted/50 p-2 rounded">
-                            <strong>참고사항:</strong> {link.note}
-                          </div>
-                        )}
-                        
-                        {link.customImage && (
-                          <div className="text-sm text-muted-foreground">
-                            <strong>커스텀 이미지:</strong> 설정됨
-                          </div>
-                        )}
+                            </a>
 
-                        <div className="flex gap-2 ml-4">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEditLink(link)}
-                            data-testid={`button-edit-${link.id}`}
-                          >
-                            <Edit2 className="w-4 h-4" />
-                            수정
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleRemoveUrl(link.url)}
-                            disabled={removeUrlMutation.isPending}
-                            data-testid={`button-remove-${link.id}`}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            삭제
-                          </Button>
+                            {link.customImage && (
+                              <Badge variant="outline" className="shrink-0" title="커스텀 이미지 설정됨">
+                                <ImageIcon className="w-3 h-3 mr-1" />
+                              </Badge>
+                            )}
+                          </div>
+
+                          {link.note && (
+                            <div className="flex items-start gap-2 rounded-lg bg-muted/50 p-2">
+                              <p className="text-m text-foreground line-clamp-2" title={link.note}>
+                                <strong className="font-medium">{link.note}</strong> 
+                              </p>
+                            </div>
+                          )}
+
+                          <Separator />
+
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditLink(link)}
+                              data-testid={`button-edit-${link.id}`}
+                            >
+                              <Edit2 className="w-4 h-4 mr-1" />수정
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleRemoveUrl(link.url)}
+                              disabled={removeUrlMutation?.isPending}
+                              data-testid={`button-remove-${link.id}`}
+                            >
+                              <Trash2 className="w-4 h-4 mr-1" />
+                              {removeUrlMutation?.isPending ? "삭제 중..." : "삭제"}
+                            </Button>
+                          </div>
                         </div>
-                        
-                      </div>
                     )}
                   </div>
                 ))}
