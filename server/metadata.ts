@@ -17,53 +17,68 @@ export async function unshortenWithCurl(url: string) {
   const { stdout } = await execFileAsync("curl", args, { timeout: 15000 });
   return stdout.trim();
 }
-import puppeteer from "puppeteer";
 
-export async function unshorten(url: string): Promise<string> {
-  const browser = await puppeteer.launch({
-    headless: "new", // 필요시 false로 바꾸면 실제 브라우저 창 보임
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+
+import { chromium } from "playwright";
+
+export async function unshorten(url: string, timeoutMs = 15000): Promise<string> {
+  // Replit 환경 안정화를 위해 headless + no-sandbox 권장
+  const browser = await chromium.launch({
+    headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
   });
 
   try {
-    const page = await browser.newPage();
-
-    // UA / Accept-Language 설정 (쿠팡 in-app 차단 회피용)
-    await page.setUserAgent(
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-        "(KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
-    );
-    await page.setExtraHTTPHeaders({
-      "Accept-Language": "ko-KR,ko;q=0.9",
-      Referer: "https://www.google.com/",
+    const context = await browser.newContext({
+      userAgent:
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+        "(KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+      locale: "ko-KR",
+      extraHTTPHeaders: {
+        "Accept-Language": "ko-KR,ko;q=0.9",
+        "Referer": "https://www.google.com/",
+      },
     });
 
-    // 불필요 리소스 차단 → 속도 ↑
-    await page.setRequestInterception(true);
-    page.on("request", (req) => {
-      if (["image", "stylesheet", "font", "media"].includes(req.resourceType()))
-        req.abort();
-      else req.continue();
+    const page = await context.newPage();
+
+    // 이미지/폰트/미디어/스타일 차단 → 속도/안정성 ↑
+    await page.route("**/*", (route) => {
+      const type = route.request().resourceType();
+      if (["image", "media", "font", "stylesheet"].includes(type)) route.abort();
+      else route.continue();
     });
 
-    // URL 열기
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 15000 });
+    // 페이지 열기 (JS 리디렉트가 많으므로 domcontentloaded 기준)
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: timeoutMs });
 
-    // <meta http-equiv="refresh"> 리디렉트 보조 처리
+    // <meta http-equiv="refresh"> 지원
     const metaUrl = await page.evaluate(() => {
-      const m = document.querySelector<HTMLMetaElement>(
-        "meta[http-equiv='refresh']"
-      );
-      if (!m?.content) return null;
-      const m2 = /url=([^;]+)/i.exec(m.content);
-      return m2 ? m2[1].trim() : null;
+      const tag = document.querySelector<HTMLMetaElement>("meta[http-equiv='refresh']");
+      if (!tag?.content) return null;
+      const m = /url=([^;]+)/i.exec(tag.content);
+      return m ? m[1].trim() : null;
     });
+
     if (metaUrl) {
       const abs = new URL(metaUrl, page.url()).toString();
-      await page.goto(abs, { waitUntil: "domcontentloaded", timeout: 15000 });
+      await page.goto(abs, { waitUntil: "domcontentloaded", timeout: timeoutMs });
     }
 
-    return page.url(); // 최종 URL
+    // JS로 지연 리디렉트가 있을 수 있으니 짧게 폴링
+    const end = Date.now() + 2000;
+    let last = "";
+    while (Date.now() < end) {
+      const cur = page.url();
+      if (cur !== last) {
+        last = cur;
+        await page.waitForTimeout(400);
+      } else {
+        break;
+      }
+    }
+
+    return page.url();
   } finally {
     await browser.close();
   }
@@ -105,7 +120,7 @@ export async function fetchMetadata(url: string) {
       {
         console.log("try curl");
 
-        finalUrl = await unshortenWithCurl(url);
+        finalUrl = await unshorten(url);
       }
 
       finalUrl = res.url;
