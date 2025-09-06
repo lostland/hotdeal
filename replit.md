@@ -4,7 +4,7 @@ This is a full-stack web application for managing and displaying link collection
 
 # User Preferences
 
-Preferred communication style: Simple, everyday language.
+Preferred communication style: Simple, everyday language, extremely concise responses. No lengthy explanations, no English translations, just core keywords/phrases.
 
 # System Architecture
 
