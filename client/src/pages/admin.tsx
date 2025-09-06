@@ -438,7 +438,7 @@ export default function Admin() {
   if (!isLoggedIn) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
+        <Card className="w-full max-w-md space-y-2 bg-indigo-200 rounded-lg p-2">
           <CardHeader>
             <CardTitle className="text-2xl text-center">관리자 로그인</CardTitle>
           </CardHeader>
@@ -578,7 +578,7 @@ export default function Admin() {
                     data-testid="button-change-password"
                   >
                     <Key className="w-4 h-4 mr-2" />
-                    비밀번호 변경
+                    비번 변경
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-md">
@@ -644,14 +644,7 @@ export default function Admin() {
                   </form>
                 </DialogContent>
               </Dialog>
-              <Button
-                variant="outline"
-                onClick={handleLogout}
-                data-testid="button-admin-logout"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                로그아웃
-              </Button>
+              
             </div>
           </div>
         </div>
@@ -659,7 +652,7 @@ export default function Admin() {
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* URL 추가 폼 */}
-        <Card className="p-2 md:p-4 lg:p-6">
+        <Card className="p-1">
           <CardHeader>
             <CardTitle>새 URL 추가</CardTitle>
           </CardHeader>
@@ -720,7 +713,7 @@ export default function Admin() {
         </Card>
 
         {/* URL 목록 */}
-        <Card className="p-2 md:p-4 lg:p-6">
+        <Card className="p-1">
           <CardHeader>
             <CardTitle>등록된 URL 목록</CardTitle>
           </CardHeader>
