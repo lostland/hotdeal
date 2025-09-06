@@ -18,10 +18,13 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, cl
   const cardRef = useRef<HTMLElement>(null);
   const [isInCenter, setIsInCenter] = useState(false);
 
-  // Fetch real-time price if link.price is null
+  // Check if note exists (non-empty, trimmed)
+  const hasNote = !!link.note?.trim();
+
+  // Fetch real-time price if link.price is null and no note exists
   const { data: priceData, isLoading: priceLoading } = useQuery<{price: string | null; linkId: string}>({
     queryKey: [`/api/price/${link.id}`],
-    enabled: !link.price, // Only fetch if price is null
+    enabled: !link.price && !hasNote, // Only fetch if price is null and no note
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
@@ -60,7 +63,7 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, cl
     };
   }, []);
 
-  const displayPrice = link.price || priceData?.price;
+  const displayPrice = hasNote ? null : (link.price || priceData?.price);
   const getDomainIcon = (domain: string) => {
     if (domain.includes('naver')) {
       return <div className="w-4 h-4 bg-green-500 rounded-sm flex items-center justify-center">
@@ -177,12 +180,12 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, cl
             </div>
           )}
           
-          {link.note && (
+          {hasNote && (
             <div 
               className="text-lg font-bold text-primary mb-2" 
               data-testid={`text-note-${link.id}`}
             >
-              {link.note}
+              {link.note!.trim()}
             </div>
           )}
           
@@ -191,7 +194,7 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, cl
               className="text-sm text-muted-foreground mb-3 line-clamp-2" 
               data-testid={`text-description-${link.id}`}
             >
-              //{link.description}
+              {link.description}
             </p>
           )}
           
@@ -212,8 +215,8 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, cl
                 title={link.title || `${link.domain} 상품`}
                 description={link.description || undefined}
                 imageUrl={link.customImage || link.image || undefined}
-                price={displayPrice || undefined}
-                note={link.note || undefined}
+                price={!hasNote ? displayPrice || undefined : undefined}
+                note={hasNote ? link.note!.trim() : undefined}
                 linkId={link.id}
                 data-testid={`kakao-share-${link.id}`}
               />
