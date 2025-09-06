@@ -1,5 +1,80 @@
 import * as cheerio from "cheerio";
+// Node 18+ (글로벌 fetch) 예시
+//import fetch from "node-fetch"; // Node<18이면 사용
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+const execFileAsync = promisify(execFile);
 
+export async function unshortenWithCurl(url: string) {
+  const args = [
+    "-Ls",               // -L: 리디렉트 따라감, -s: quiet
+    "-o", "/dev/null",   // 바디 버림
+    "-w", "%{url_effective}", // 최종 URL만 출력
+    "-A", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+    "-e", "https://www.google.com/",
+    url,
+  ];
+  const { stdout } = await execFileAsync("curl", args, { timeout: 15000 });
+  return stdout.trim();
+}
+
+import puppeteer from "puppeteer-extra";
+import StealthPlugin from "puppeteer-extra-plugin-stealth";
+
+puppeteer.use(StealthPlugin());
+
+export async function unshortenWithBrowser(url: string) {
+  const browser = await puppeteer.launch({
+    headless: "new",
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+    ],
+  });
+  try {
+    const page = await browser.newPage();
+
+    await page.setUserAgent(
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+      "(KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+    );
+    await page.setExtraHTTPHeaders({
+      "Accept-Language": "ko-KR,ko;q=0.9",
+      "Referer": "https://www.google.com/",
+    });
+
+    // 이미지/폰트/미디어 차단 → 빠름
+    await page.setRequestInterception(true);
+    page.on("request", req => {
+      const type = req.resourceType();
+      if (["image","media","font","stylesheet"].includes(type)) req.abort();
+      else req.continue();
+    });
+
+    const resp = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 15000 });
+    // 네트워크 리디렉트 체인
+    const chain = resp?.request().redirectChain().map(r => r.url()) ?? [];
+    let finalUrl = page.url();
+
+    // 메타/JS 리디렉트 보조
+    const metaUrl = await page.evaluate(() => {
+      const m = document.querySelector('meta[http-equiv="refresh"]') as HTMLMetaElement | null;
+      if (!m?.content) return null;
+      const m2 = /url=([^;]+)/i.exec(m.content);
+      return m2 ? m2[1].trim() : null;
+    });
+    if (metaUrl) {
+      const abs = new URL(metaUrl, finalUrl).toString();
+      await page.goto(abs, { waitUntil: "domcontentloaded", timeout: 15000 });
+      finalUrl = page.url();
+    }
+
+    return { finalUrl, chain: [...chain, finalUrl] };
+  } finally {
+    await browser.close();
+  }
+}
 
 
 export async function fetchMetadata(url: string) {
@@ -13,34 +88,41 @@ export async function fetchMetadata(url: string) {
     const domain = urlObj.hostname;
     
     
-    // For G마켓 redirect links, try to get the actual product URL first
-    if (url.includes('link.gmarket.co.kr')) {
-      try {
-        // Try multiple methods to get the redirect URL
-        const response = await fetch(url, {
-          method: 'HEAD',
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
-            'Accept': '*/*',
-            'Accept-Language': 'ko-KR,ko;q=0.9',
-          },
-          redirect: 'follow'
-        });
-        
-        if (response.url && response.url !== url) {
-          finalUrl = response.url;
-          console.log(`G마켓 리디렉트: ${url} -> ${finalUrl}`);
-          
-          // Extract product code from the redirected URL
-          const match = finalUrl.match(/goodscode=(\d+)/);
-          if (match) {
-            productCode = match[1];
-            console.log(`추출된 상품 코드: ${productCode}`);
-          }
-        }
-      } catch (redirectError) {
-        console.log('리디렉트 실패, 원본 URL 사용:', redirectError instanceof Error ? redirectError.message : String(redirectError));
+    // For redirect links, try to get the actual product URL first
+    if (url.includes('link.')) {
+      console.log('리디렉트 링크 감지, 실제 URL 가져오기 시도...');
+
+      const res = await fetch(url, {
+        method: "GET",
+        redirect: "manual",                 // 직접 Location 읽기 (서버사이드 OK)
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+            "(KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+          "Accept": "*/*",
+          "Accept-Language": "ko-KR,ko;q=0.9",
+          "Referer": "https://www.google.com/",   // 일부 단축링크가 좋아함
+        },
+        // timeout은 AbortController로 아래에서 설정
+      })
+
+      console.log("redirected:", res.redirected, "final?", res.url);
+
+      if( !res.redirected )
+      {
+        console.log("try curl");
+
+        finalUrl = await unshortenWithCurl(url);
       }
+
+      finalUrl = res.url;
+
+      // 교차 출처 + CORS 미허용이면 res.url이 신뢰 안 될 수 있음
+      //let finalUrl = res.url && res.url !== url ? res.url : url;
+      //finalUrl = await unshorten(url);
+      
+      console.log(`리디렉트 후 최종 URL: ${finalUrl}`);
+      
     }
 
     // Try multiple approaches to fetch data
@@ -333,7 +415,8 @@ export async function fetchMetadata(url: string) {
     let fallbackImage = '';
     let fallbackPrice = null;
     let fallbackProductCode = null;
-    
+
+    /*
     // For G마켓 links, try to extract product code from either original URL or redirect
     if (domain.includes('gmarket') || url.includes('link.gmarket.co.kr')) {
       // First try to get product code from direct URL
@@ -382,6 +465,7 @@ export async function fetchMetadata(url: string) {
       fallbackImage = '';
       fallbackPrice = null;
     }
+    */
     
     return {
       title: fallbackTitle,
