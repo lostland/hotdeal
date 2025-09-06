@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관리자 페이지</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen">
+    <div id="app">
+        <!-- 로그인 화면 -->
+        <div id="loginScreen" class="flex items-center justify-center min-h-screen">
+            <div class="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg max-w-md w-full mx-4">
+                <h1 class="text-2xl font-bold mb-6 text-center text-gray-900 dark:text-white">관리자 로그인</h1>
+                <form id="loginForm">
+                    <div class="mb-4">
+                        <label for="username" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            사용자명
+                        </label>
+                        <input 
+                            type="text" 
+                            id="username" 
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                            required
+                        >
+                    </div>
+                    <div class="mb-6">
+                        <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            비밀번호
+                        </label>
+                        <input 
+                            type="password" 
+                            id="password" 
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                            required
+                        >
+                    </div>
+                    <button 
+                        type="submit" 
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
+                    >
+                        로그인
+                    </button>
+                </form>
+                <div id="loginError" class="mt-4 text-red-600 text-sm hidden"></div>
+            </div>
+        </div>
+
+        <!-- 관리자 대시보드 -->
+        <div id="adminDashboard" class="hidden min-h-screen">
+            <header class="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+                <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex justify-between items-center py-4">
+                        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">URL 관리</h1>
+                        <button 
+                            id="logoutBtn" 
+                            class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors"
+                        >
+                            로그아웃
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <main class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <!-- URL 추가 폼 -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-900 dark:text-white">새 URL 추가</h2>
+                    <form id="addUrlForm" class="flex gap-4">
+                        <input 
+                            type="url" 
+                            id="newUrl" 
+                            placeholder="https://example.com" 
+                            class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                            required
+                        >
+                        <button 
+                            type="submit" 
+                            class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors"
+                        >
+                            추가
+                        </button>
+                    </form>
+                </div>
+
+                <!-- URL 목록 -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                    <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+                        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">등록된 URL 목록</h2>
+                    </div>
+                    <div id="urlList" class="divide-y divide-gray-200 dark:divide-gray-700">
+                        <!-- URL 목록이 여기에 동적으로 추가됩니다 -->
+                    </div>
+                </div>
+
+                <!-- 메시지 표시 -->
+                <div id="message" class="hidden mt-4 p-4 rounded-md"></div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        let currentUrls = [];
+
+        // 로그인 처리
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById('loginScreen').classList.add('hidden');
+                    document.getElementById('adminDashboard').classList.remove('hidden');
+                    loadUrls();
+                } else {
+                    showLoginError('잘못된 사용자명 또는 비밀번호입니다.');
+                }
+            } catch (error) {
+                showLoginError('로그인 중 오류가 발생했습니다.');
+            }
+        });
+
+        // 로그아웃 처리
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            document.getElementById('adminDashboard').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            hideLoginError();
+        });
+
+        // URL 추가 처리
+        document.getElementById('addUrlForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const url = document.getElementById('newUrl').value;
+            
+            try {
+                const response = await fetch('/api/admin/urls', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+                
+                if (response.ok) {
+                    document.getElementById('newUrl').value = '';
+                    showMessage('URL이 성공적으로 추가되었습니다.', 'success');
+                    loadUrls();
+                } else {
+                    const error = await response.json();
+                    showMessage(error.message || 'URL 추가에 실패했습니다.', 'error');
+                }
+            } catch (error) {
+                showMessage('URL 추가 중 오류가 발생했습니다.', 'error');
+            }
+        });
+
+        // URL 목록 로드
+        async function loadUrls() {
+            try {
+                const response = await fetch('/api/admin/urls');
+                const urls = await response.json();
+                currentUrls = urls;
+                renderUrls(urls);
+            } catch (error) {
+                showMessage('URL 목록 로드 중 오류가 발생했습니다.', 'error');
+            }
+        }
+
+        // URL 목록 렌더링
+        function renderUrls(urls) {
+            const urlList = document.getElementById('urlList');
+            
+            if (urls.length === 0) {
+                urlList.innerHTML = '<div class="p-6 text-center text-gray-500 dark:text-gray-400">등록된 URL이 없습니다.</div>';
+                return;
+            }
+            
+            urlList.innerHTML = urls.map(url => `
+                <div class="p-4 flex items-center justify-between">
+                    <div class="flex-1">
+                        <a href="${url}" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline break-all">
+                            ${url}
+                        </a>
+                    </div>
+                    <button 
+                        onclick="removeUrl('${url}')" 
+                        class="ml-4 px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-colors"
+                    >
+                        삭제
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // URL 삭제
+        async function removeUrl(url) {
+            if (!confirm('이 URL을 삭제하시겠습니까?')) return;
+            
+            try {
+                const response = await fetch('/api/admin/urls', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+                
+                if (response.ok) {
+                    showMessage('URL이 성공적으로 삭제되었습니다.', 'success');
+                    loadUrls();
+                } else {
+                    const error = await response.json();
+                    showMessage(error.message || 'URL 삭제에 실패했습니다.', 'error');
+                }
+            } catch (error) {
+                showMessage('URL 삭제 중 오류가 발생했습니다.', 'error');
+            }
+        }
+
+        // 메시지 표시
+        function showMessage(text, type) {
+            const message = document.getElementById('message');
+            message.className = `mt-4 p-4 rounded-md ${type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+            message.textContent = text;
+            message.classList.remove('hidden');
+            
+            setTimeout(() => {
+                message.classList.add('hidden');
+            }, 3000);
+        }
+
+        // 로그인 에러 표시
+        function showLoginError(text) {
+            const error = document.getElementById('loginError');
+            error.textContent = text;
+            error.classList.remove('hidden');
+        }
+
+        function hideLoginError() {
+            document.getElementById('loginError').classList.add('hidden');
+        }
+
+        // 다크 모드 지원
+        if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+    </script>
+</body>
+</html>
