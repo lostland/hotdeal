@@ -191,7 +191,7 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, cl
               className="text-sm text-muted-foreground mb-3 line-clamp-2" 
               data-testid={`text-description-${link.id}`}
             >
-              {link.description}
+              //{link.description}
             </p>
           )}
           
