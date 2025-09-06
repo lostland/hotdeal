@@ -752,6 +752,7 @@ export default function Admin() {
                     ) : (
                       // 일반 표시 모드
                       <div className="space-y-2">
+                        
                         <div className="flex items-center justify-between">
                           <a
                             href={link.url}
@@ -760,8 +761,13 @@ export default function Admin() {
                             className="text-primary hover:underline break-all flex items-center gap-2 flex-1"
                             data-testid="link-url"
                           >
+                            {link.title && (
+                              <div className="text-sm text-muted-foreground">
+                                <strong>제목:</strong> {link.title}
+                              </div>
+                            )}
                             <ExternalLink className="w-4 h-4 flex-shrink-0" />
-                            {link.url}
+                            
                           </a>
                           <div className="flex gap-2 ml-4">
                             <Button
@@ -790,11 +796,7 @@ export default function Admin() {
                             <strong>참고사항:</strong> {link.note}
                           </div>
                         )}
-                        {link.title && (
-                          <div className="text-sm text-muted-foreground">
-                            <strong>제목:</strong> {link.title}
-                          </div>
-                        )}
+                        
                         {link.customImage && (
                           <div className="text-sm text-muted-foreground">
                             <strong>커스텀 이미지:</strong> 설정됨
