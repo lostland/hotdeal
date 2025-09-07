@@ -800,7 +800,7 @@ export default function Admin() {
                           <Button
                             size="sm"
                             onClick={handleSaveEdit}
-                            disabled={!editUrl?.trim() || updateUrlMutation?.isPending}
+                            disabled={updateUrlMutation?.isPending}
                           >
                             <Save className="w-4 h-4 mr-1" />
                             {updateUrlMutation?.isPending ? "저장 중..." : "저장"}

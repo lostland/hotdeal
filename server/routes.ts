@@ -293,7 +293,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { oldUrl, newUrl, title, note, customImage } = req.body;
       
-      if (!oldUrl || !newUrl) {
+      if (!oldUrl || newUrl === undefined || newUrl === null) {
         return res.status(400).json({ message: "Old URL and new URL are required" });
       }
 
