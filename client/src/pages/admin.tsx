@@ -408,7 +408,7 @@ export default function Admin() {
   };
 
   const handleSaveEdit = () => {
-    if (editingLink && editUrl.trim()) {
+    if (editingLink) {
       updateUrlMutation.mutate({
         oldUrl: editingLink.url,
         newUrl: editUrl.trim(),

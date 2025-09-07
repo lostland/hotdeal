@@ -10,9 +10,12 @@ import { ExternalLink, Settings, Eye, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Home() {
-  const { data: links = [], isLoading, error, refetch } = useQuery<Link[]>({
+  const { data: allLinks = [], isLoading, error, refetch } = useQuery<Link[]>({
     queryKey: ["/api/links"],
   });
+
+  // 빈 URL인 링크는 화면에 표시하지 않음
+  const links = allLinks.filter(link => link.url && link.url.trim());
 
   // 방문자수와 공유수 상태
   const [visitorCount, setVisitorCount] = useState(0);

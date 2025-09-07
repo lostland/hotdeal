@@ -280,34 +280,64 @@ export class ReplDBStorage {
 
     // URL이 변경된 경우 새로운 메타데이터 가져오기
     if (oldUrl !== newUrl) {
-      try {
-        const metadata = await fetchMetadata(newUrl);
+      // 빈 URL이거나 유효하지 않은 URL인 경우
+      if (!newUrl.trim()) {
         data.links[linkIndex] = {
           ...data.links[linkIndex],
           url: newUrl,
-          title: title || metadata.title,
-          description: metadata.description,
-          image: metadata.image,
+          title: title || "빈 링크",
+          description: "URL이 설정되지 않은 링크입니다.",
+          image: null,
           customImage: customImage || null,
-          domain: metadata.domain,
-          price: metadata.price,
+          domain: "",
+          price: null,
           note: note || null
         };
-      } catch (error) {
-        console.error(`Failed to fetch metadata for ${newUrl}:`, error);
-        // Fallback data
-        const urlObj = new URL(newUrl);
-        const domain = urlObj.hostname;
-        const fallbackData = this.getFallbackData(newUrl, domain);
-        
-        data.links[linkIndex] = {
-          ...data.links[linkIndex],
-          url: newUrl,
-          ...fallbackData,
-          title: title || fallbackData.title,
-          customImage: customImage || null,
-          note: note || null
-        };
+      } else {
+        try {
+          const metadata = await fetchMetadata(newUrl);
+          data.links[linkIndex] = {
+            ...data.links[linkIndex],
+            url: newUrl,
+            title: title || metadata.title,
+            description: metadata.description,
+            image: metadata.image,
+            customImage: customImage || null,
+            domain: metadata.domain,
+            price: metadata.price,
+            note: note || null
+          };
+        } catch (error) {
+          console.error(`Failed to fetch metadata for ${newUrl}:`, error);
+          try {
+            // Fallback data
+            const urlObj = new URL(newUrl);
+            const domain = urlObj.hostname;
+            const fallbackData = this.getFallbackData(newUrl, domain);
+            
+            data.links[linkIndex] = {
+              ...data.links[linkIndex],
+              url: newUrl,
+              ...fallbackData,
+              title: title || fallbackData.title,
+              customImage: customImage || null,
+              note: note || null
+            };
+          } catch (urlError) {
+            // URL이 완전히 유효하지 않은 경우
+            data.links[linkIndex] = {
+              ...data.links[linkIndex],
+              url: newUrl,
+              title: title || "잘못된 링크",
+              description: "유효하지 않은 URL입니다.",
+              image: null,
+              customImage: customImage || null,
+              domain: "",
+              price: null,
+              note: note || null
+            };
+          }
+        }
       }
     } else {
       // URL이 같으면 title, note, customImage 업데이트
