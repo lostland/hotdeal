@@ -19,72 +19,6 @@ export async function unshortenWithCurl(url: string) {
 }
 
 
-import { chromium } from "playwright";
-
-export async function unshorten(url: string, timeoutMs = 15000): Promise<string> {
-  // Replit 환경 안정화를 위해 headless + no-sandbox 권장
-  const browser = await chromium.launch({
-    headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
-  });
-
-  try {
-    const context = await browser.newContext({
-      userAgent:
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-        "(KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
-      locale: "ko-KR",
-      extraHTTPHeaders: {
-        "Accept-Language": "ko-KR,ko;q=0.9",
-        "Referer": "https://www.google.com/",
-      },
-    });
-
-    const page = await context.newPage();
-
-    // 이미지/폰트/미디어/스타일 차단 → 속도/안정성 ↑
-    await page.route("**/*", (route) => {
-      const type = route.request().resourceType();
-      if (["image", "media", "font", "stylesheet"].includes(type)) route.abort();
-      else route.continue();
-    });
-
-    // 페이지 열기 (JS 리디렉트가 많으므로 domcontentloaded 기준)
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: timeoutMs });
-
-    // <meta http-equiv="refresh"> 지원
-    const metaUrl = await page.evaluate(() => {
-      const tag = document.querySelector<HTMLMetaElement>("meta[http-equiv='refresh']");
-      if (!tag?.content) return null;
-      const m = /url=([^;]+)/i.exec(tag.content);
-      return m ? m[1].trim() : null;
-    });
-
-    if (metaUrl) {
-      const abs = new URL(metaUrl, page.url()).toString();
-      await page.goto(abs, { waitUntil: "domcontentloaded", timeout: timeoutMs });
-    }
-
-    // JS로 지연 리디렉트가 있을 수 있으니 짧게 폴링
-    const end = Date.now() + 2000;
-    let last = "";
-    while (Date.now() < end) {
-      const cur = page.url();
-      if (cur !== last) {
-        last = cur;
-        await page.waitForTimeout(400);
-      } else {
-        break;
-      }
-    }
-
-    return page.url();
-  } finally {
-    await browser.close();
-  }
-}
-
-
 export async function fetchMetadata(url: string) {
   try {
     // Get final URL after redirects for better processing
@@ -94,10 +28,11 @@ export async function fetchMetadata(url: string) {
     // Extract domain early for error handling
     const urlObj = new URL(url);
     const domain = urlObj.hostname;
-    
+
+    console.log(`----------------------------------------------------------`);
     
     // For redirect links, try to get the actual product URL first
-    if (url.includes('link.')) {
+    if (url.includes('link.') ||url.includes('click.kakao') ) {
       console.log('리디렉트 링크 감지, 실제 URL 가져오기 시도...');
 
       const res = await fetch(url, {
@@ -120,7 +55,7 @@ export async function fetchMetadata(url: string) {
       {
         console.log("try curl");
 
-        finalUrl = await unshorten(url);
+        finalUrl = await unshortenWithCurl(url);
       }
 
       finalUrl = res.url;
@@ -152,7 +87,7 @@ export async function fetchMetadata(url: string) {
     let lastError = null;
 
     // Try each approach
-    console.log(`----------------------------------------------------------`);
+    
     console.log(`${finalUrl}`)
     for (const userAgent of approaches) {
       try {
