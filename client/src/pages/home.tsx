@@ -117,6 +117,7 @@ export default function Home() {
   }
 
   return (
+    
     <div className="min-h-screen bg-background">
       <AppHeader />
       
@@ -142,7 +143,7 @@ export default function Home() {
             <>
 
               {/* ───────────────── 홍보성 안내 카드 ───────────────── */}
-              <div className="rounded-2xl overflow-hidden shadow-md border border-yellow-300 dark:border-yellow-600 bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30 mb-4">
+              <div className="rounded-2xl overflow-hidden shadow-md border border-yellow-300 dark:border-yellow-600 bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-900/30 dark:to-orange-900/30 mb-8">
                 <div className="p-4 text-center">
                   <h3 className="text-lg font-bold text-yellow-800 dark:text-yellow-300 mb-2">
                     🚀 실시간 새롭게 추가되는 핫딜!
