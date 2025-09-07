@@ -663,11 +663,11 @@ export default function Admin() {
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* URL 추가 폼 */}
-        <Card className="p-1">
-          <CardHeader>
-            <CardTitle>새 URL 추가</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <div className="p-1">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">새 URL 추가</h1>
+          </div>
+          <div>
             <form onSubmit={handleAddUrl} className="space-y-4 bg-indigo-100 rounded-lg p-2">
               <div>
                 <label htmlFor="new-url" className="block text-sm font-medium mb-2">
@@ -720,15 +720,14 @@ export default function Admin() {
                 {addUrlMutation.isPending ? "추가 중..." : "추가"}
               </Button>
             </form>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* URL 목록 */}
-        <Card className="p-1">
-          <CardHeader>
-            <CardTitle>등록된 URL 목록</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <div className="p-1">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">등록된 URL 목록</h1>               </div>
+          <div>
             {links.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 등록된 URL이 없습니다.
@@ -880,8 +879,8 @@ export default function Admin() {
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </main>
     </div>
   );
