@@ -3,7 +3,7 @@ import { KakaoShareButton } from "./kakao-share-button";
 
 export function AppHeader() {
   return (
-    <header className="bg-card shadow-sm border-b border-border sticky top-0 z-40" data-testid="app-header">
+    <header className="bg-card shadow-lg border-b border-border sticky top-0 z-40 translate-y-[-2px]" data-testid="app-header">
       <div className="w-full flex justify-center relative">
         <img 
           src={logoImage} 
