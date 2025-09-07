@@ -264,8 +264,8 @@ export class ReplDBStorage {
       throw new Error('Original URL not found');
     }
 
-    // 새 URL이 다르면서 이미 존재하는지 확인
-    if (oldUrl !== newUrl && data.urls.includes(newUrl)) {
+    // 새 URL이 다르면서 이미 존재하는지 확인 (빈 URL은 제외)
+    if (oldUrl !== newUrl && newUrl.trim() !== '' && data.urls.includes(newUrl)) {
       throw new Error('New URL already exists');
     }
 
