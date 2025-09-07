@@ -42,6 +42,15 @@ export default function Admin() {
   const newImageUploaderRef = useRef<ObjectUploaderRef>(null);
   const editImageUploaderRef = useRef<ObjectUploaderRef>(null);
 
+  // 페이지 로드 시 localStorage에서 로그인 상태 확인
+  useEffect(() => {
+    const savedUsername = localStorage.getItem('adminUsername');
+    if (savedUsername) {
+      setIsLoggedIn(true);
+      setCurrentUsername(savedUsername);
+    }
+  }, []);
+
   // URLs 조회
   const { data: urls = [], refetch: refetchUrls } = useQuery<string[]>({
     queryKey: ["/api/admin/urls"],
@@ -64,6 +73,7 @@ export default function Admin() {
       if (data.success) {
         setIsLoggedIn(true);
         setCurrentUsername(data.username);
+        localStorage.setItem('adminUsername', data.username);
         setLoginError("");
         refetchUrls();
       } else {
@@ -301,6 +311,7 @@ export default function Admin() {
     setUsername("");
     setPassword("");
     setLoginError("");
+    localStorage.removeItem('adminUsername');
   };
 
   const handleChangePassword = (e: React.FormEvent) => {
