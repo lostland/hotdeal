@@ -18,9 +18,16 @@ export default function Home() {
   const links = allLinks.filter(link => link.url && link.url.trim());
 
   // 서버에서 통계 정보 가져오기
-  const { data: stats = { visitorCount: 0, shareCount: 0 } } = useQuery<{ visitorCount: number; shareCount: number }>({
+  const { data: stats = { visitorCount: 0, shareCount: 0 }, isLoading: statsLoading, error: statsError } = useQuery<{ visitorCount: number; shareCount: number }>({
     queryKey: ["/api/stats"],
   });
+  
+  // 디버깅: 통계 데이터 로그
+  useEffect(() => {
+    console.log('Stats:', stats);
+    console.log('Stats Loading:', statsLoading);
+    console.log('Stats Error:', statsError);
+  }, [stats, statsLoading, statsError]);
 
   // 방문자 수 증가 mutation
   const visitMutation = useMutation({
@@ -38,9 +45,13 @@ export default function Home() {
     },
   });
 
-  // 페이지 로드 시 방문자수 증가
+  // 페이지 로드 시 방문자수 증가 (한 번만 실행)
   useEffect(() => {
-    visitMutation.mutate();
+    const hasVisited = sessionStorage.getItem('hasVisited');
+    if (!hasVisited) {
+      visitMutation.mutate();
+      sessionStorage.setItem('hasVisited', 'true');
+    }
   }, []);
 
   // 공유수 증가 함수
