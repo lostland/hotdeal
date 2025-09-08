@@ -310,9 +310,16 @@ export async function fetchMetadata(url: string) {
         return matches;
       });
       
+      // "원"이 포함된 가격은 0원이라도 유효한 가격으로 처리
       if (isInvalidPrice && !price.includes('원')) {
         console.log(`잘못된 가격 데이터 필터링: "${price}"`);
         price = null;
+      } else if (price.includes('원')) {
+        console.log(`"원"이 포함된 가격은 유효함: "${price}"`);
+        // 가격 정리
+        const cleanedPrice = price.replace(/[^\d,원\.]/g, '').trim();
+        console.log(`가격 정리: "${price}" -> "${cleanedPrice}"`);
+        price = cleanedPrice;
       } else {
         // jnmall.kr 특별 처리: %가 있으면 바로 뒤의 가격만 추출
         if (finalDomain.includes('jnmall.kr') && price.includes('%')) {
