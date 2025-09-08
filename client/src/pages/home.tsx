@@ -18,7 +18,7 @@ export default function Home() {
   const links = allLinks.filter(link => link.url && link.url.trim());
 
   // 서버에서 통계 정보 가져오기
-  const { data: stats = { visitorCount: 0, shareCount: 0 } } = useQuery({
+  const { data: stats = { visitorCount: 0, shareCount: 0 } } = useQuery<{ visitorCount: number; shareCount: number }>({
     queryKey: ["/api/stats"],
   });
 
