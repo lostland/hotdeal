@@ -270,6 +270,20 @@ export async function fetchMetadata(url: string) {
                  null;
         })()
       ) : null) ||
+      // 쿠팡 전용: 다양한 선택자로 가격 추출
+      (finalDomain.includes('coupang') ? (
+        $('.prod-price .total-price').first().text().trim() ||
+        $('.prod-price .price').first().text().trim() ||
+        $('.total-price').first().text().trim() ||
+        $('.price-value').first().text().trim() ||
+        $('.rocket-price').first().text().trim() ||
+        $('.sale-price').first().text().trim() ||
+        $('.discount-price').first().text().trim() ||
+        $('.prod-coupon-price .coupon-price').first().text().trim() ||
+        $('.base-price').first().text().trim() ||
+        $('[class*="price"]').first().text().trim() ||
+        null
+      ) : null) ||
       // 기타 사이트 전용 가격 추출
       // JSON-LD structured data
       $('script[type="application/ld+json"]').toArray().map(script => {
@@ -311,6 +325,20 @@ export async function fetchMetadata(url: string) {
     if (!image && finalDomain.includes('gmarket') && productCode) {
       // Only for gmarket with valid product code, construct dynamic image URL
       image = `https://gdimg.gmarket.co.kr/${productCode}/still/300`;
+    }
+
+    // 쿠팡 이미지 URL 생성 (제품 ID 추출)
+    if (!image && finalDomain.includes('coupang')) {
+      const productIdMatch = finalUrl.match(/products\/(\d+)/);
+      const itemIdMatch = finalUrl.match(/itemId=(\d+)/);
+      
+      if (productIdMatch && itemIdMatch) {
+        const productId = productIdMatch[1];
+        const itemId = itemIdMatch[1];
+        // 쿠팡 이미지 URL 패턴 (일반적인 형태)
+        image = `https://thumbnail9.coupangcdn.com/thumbnails/remote/230x230ex/image/retail/images/2023/12/26/10/3/productimage/${productId}_${itemId}_1.jpg`;
+        console.log(`쿠팡 이미지 URL 생성: products=${productId}, itemId=${itemId} -> ${image}`);
+      }
     }
 
     // Ensure absolute URLs for images
@@ -404,56 +432,18 @@ export async function fetchMetadata(url: string) {
     let fallbackPrice = null;
     let fallbackProductCode = null;
 
-    /*
-    // For G마켓 links, try to extract product code from either original URL or redirect
-    if (domain.includes('gmarket') || url.includes('link.gmarket.co.kr')) {
-      // First try to get product code from direct URL
-      if (url.includes('goodscode=')) {
-        const match = url.match(/goodscode=(\d+)/);
-        if (match) fallbackProductCode = match[1];
-      }
+    // 쿠팡 fallback: URL에서 제품 ID 추출해서 이미지 생성
+    if (domain.includes('coupang')) {
+      const productIdMatch = url.match(/products\/(\d+)/);
+      const itemIdMatch = url.match(/itemId=(\d+)/);
       
-      // If it's a redirect link and we don't have product code, try one more redirect attempt
-      if (!fallbackProductCode && url.includes('link.gmarket.co.kr')) {
-        try {
-          // Quick redirect attempt to get product code
-          const redirectResponse = await fetch(url, {
-            method: 'HEAD',
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-            },
-            redirect: 'follow',
-            signal: AbortSignal.timeout(5000)
-          });
-          
-          if (redirectResponse.url && redirectResponse.url.includes('goodscode=')) {
-            const match = redirectResponse.url.match(/goodscode=(\d+)/);
-            if (match) {
-              fallbackProductCode = match[1];
-              console.log(`Fallback에서 상품 코드 추출 성공: ${fallbackProductCode}`);
-            }
-          }
-        } catch (redirectError) {
-          console.log('Fallback 리디렉트 시도 실패:', redirectError instanceof Error ? redirectError.message : String(redirectError));
-        }
+      if (productIdMatch && itemIdMatch) {
+        const productId = productIdMatch[1];
+        const itemId = itemIdMatch[1];
+        fallbackImage = `https://thumbnail9.coupangcdn.com/thumbnails/remote/230x230ex/image/retail/images/2023/12/26/10/3/productimage/${productId}_${itemId}_1.jpg`;
+        console.log(`쿠팡 fallback 이미지 생성: ${fallbackImage}`);
       }
-      
-      fallbackTitle = '';
-      fallbackDescription = '';
-      
-      if (fallbackProductCode) {
-        fallbackImage = `https://gdimg.gmarket.co.kr/${fallbackProductCode}/still/300`;
-      } else {
-        fallbackImage = '';
-      }
-      fallbackPrice = null;
-    } else {
-      fallbackTitle = '';
-      fallbackDescription = '';
-      fallbackImage = '';
-      fallbackPrice = null;
     }
-    */
     
     return {
       title: fallbackTitle,
