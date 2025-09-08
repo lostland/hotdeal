@@ -41,13 +41,9 @@ export default function Home() {
     },
   });
 
-  // 페이지 로드 시 방문자수 증가 (한 번만 실행)
+  // 페이지 로드 시 방문자수 증가
   useEffect(() => {
-    const hasVisited = sessionStorage.getItem('hasVisited');
-    if (!hasVisited) {
-      visitMutation.mutate();
-      sessionStorage.setItem('hasVisited', 'true');
-    }
+    visitMutation.mutate();
   }, []);
 
   // 공유수 증가 함수
