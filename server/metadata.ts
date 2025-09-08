@@ -270,20 +270,6 @@ export async function fetchMetadata(url: string) {
                  null;
         })()
       ) : null) ||
-      // 쿠팡 전용: 다양한 선택자로 가격 추출
-      (finalDomain.includes('coupang') ? (
-        $('.prod-price .total-price').first().text().trim() ||
-        $('.prod-price .price').first().text().trim() ||
-        $('.total-price').first().text().trim() ||
-        $('.price-value').first().text().trim() ||
-        $('.rocket-price').first().text().trim() ||
-        $('.sale-price').first().text().trim() ||
-        $('.discount-price').first().text().trim() ||
-        $('.prod-coupon-price .coupon-price').first().text().trim() ||
-        $('.base-price').first().text().trim() ||
-        $('[class*="price"]').first().text().trim() ||
-        null
-      ) : null) ||
       // 기타 사이트 전용 가격 추출
       // JSON-LD structured data
       $('script[type="application/ld+json"]').toArray().map(script => {
@@ -327,19 +313,6 @@ export async function fetchMetadata(url: string) {
       image = `https://gdimg.gmarket.co.kr/${productCode}/still/300`;
     }
 
-    // 쿠팡 이미지 URL 생성 (제품 ID 추출)
-    if (!image && finalDomain.includes('coupang')) {
-      const productIdMatch = finalUrl.match(/products\/(\d+)/);
-      const itemIdMatch = finalUrl.match(/itemId=(\d+)/);
-      
-      if (productIdMatch && itemIdMatch) {
-        const productId = productIdMatch[1];
-        const itemId = itemIdMatch[1];
-        // 쿠팡 이미지 URL 패턴 (일반적인 형태)
-        image = `https://thumbnail9.coupangcdn.com/thumbnails/remote/230x230ex/image/retail/images/2023/12/26/10/3/productimage/${productId}_${itemId}_1.jpg`;
-        console.log(`쿠팡 이미지 URL 생성: products=${productId}, itemId=${itemId} -> ${image}`);
-      }
-    }
 
     // Ensure absolute URLs for images
     if (image && !image.startsWith('http')) {
@@ -432,18 +405,6 @@ export async function fetchMetadata(url: string) {
     let fallbackPrice = null;
     let fallbackProductCode = null;
 
-    // 쿠팡 fallback: URL에서 제품 ID 추출해서 이미지 생성
-    if (domain.includes('coupang')) {
-      const productIdMatch = url.match(/products\/(\d+)/);
-      const itemIdMatch = url.match(/itemId=(\d+)/);
-      
-      if (productIdMatch && itemIdMatch) {
-        const productId = productIdMatch[1];
-        const itemId = itemIdMatch[1];
-        fallbackImage = `https://thumbnail9.coupangcdn.com/thumbnails/remote/230x230ex/image/retail/images/2023/12/26/10/3/productimage/${productId}_${itemId}_1.jpg`;
-        console.log(`쿠팡 fallback 이미지 생성: ${fallbackImage}`);
-      }
-    }
     
     return {
       title: fallbackTitle,
