@@ -91,6 +91,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 메타데이터 새로고침 API
+  app.post("/api/admin/refresh-metadata/:linkId", async (req, res) => {
+    try {
+      const { linkId } = req.params;
+      
+      const links = await replDBStorage.getAllLinks();
+      const link = links.find(l => l.id === linkId);
+      
+      if (!link) {
+        return res.status(404).json({ message: "Link not found" });
+      }
+
+      // 새로운 메타데이터 가져오기
+      const metadata = await queueMetadataRequest(link.url);
+      
+      // 링크 업데이트
+      await replDBStorage.updateLinkMetadata(linkId, metadata);
+      
+      res.json({ success: true, metadata });
+    } catch (error) {
+      console.error("Error refreshing metadata:", error);
+      res.status(500).json({ message: "Failed to refresh metadata" });
+    }
+  });
+
   // Get real-time price for a specific URL
   app.get("/api/price/:linkId", async (req, res) => {
     try {

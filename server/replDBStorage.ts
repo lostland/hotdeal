@@ -255,6 +255,26 @@ export class ReplDBStorage {
     return data.urls || [];
   }
 
+  async updateLinkMetadata(linkId: string, metadata: any): Promise<boolean> {
+    const data = await this.readLinksData();
+    const linkIndex = data.links.findIndex(l => l.id === linkId);
+    
+    if (linkIndex === -1) return false;
+    
+    // 메타데이터 업데이트 (기존 customImage와 note는 유지)
+    data.links[linkIndex] = {
+      ...data.links[linkIndex],
+      title: metadata.title || data.links[linkIndex].title,
+      description: metadata.description || data.links[linkIndex].description,
+      image: metadata.image || data.links[linkIndex].image,
+      price: metadata.price || data.links[linkIndex].price,
+      domain: metadata.domain || data.links[linkIndex].domain
+    };
+    
+    await this.saveLinksData(data);
+    return true;
+  }
+
   async updateUrl(oldUrl: string, newUrl: string, title?: string | null, note?: string | null, customImage?: string | null): Promise<Link> {
     const data = await this.readLinksData();
 

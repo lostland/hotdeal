@@ -229,23 +229,46 @@ export async function fetchMetadata(url: string) {
         $('.price_info .sale_price').first().text().trim() ||
         null
       ) : null) ||
-      // G마켓 전용: DOM에서 가격 추출 (메타데이터 무시)
+      // G마켓 전용: JSON 데이터에서 할인가 추출
       (finalDomain.includes('gmarket') ? (
-        $('.item_price .price_innerwrap .price_real .price').first().text().trim() ||
-        $('.item_price .discount_price').first().text().trim() ||
-        $('.price_real .price').first().text().trim() ||
-        $('.item_price .price').first().text().trim() ||
-        $('.product-price .price').first().text().trim() ||
-        $('.prc_t .prc').first().text().trim() ||
-        $('.real_price').first().text().trim() ||
-        $('.sale_price').first().text().trim() ||
-        $('#__itemDetailForm .prc_t .prc').first().text().trim() ||
-        $('.box_item_price .price').first().text().trim() ||
-        $('[data-montelena="item_price"]').first().text().trim() ||
-        $('._price').first().text().trim() ||
-        $('.price_num').first().text().trim() ||
-        $('.price_value').first().text().trim() ||
-        null
+        (() => {
+          // JSON 구조화 데이터에서 할인가 추출
+          const jsonScripts = $('meta[name="uts-pvalue"]').attr('content');
+          if (jsonScripts) {
+            try {
+              const jsonData = JSON.parse(jsonScripts);
+              if (jsonData.DCPRICE && jsonData.DCPRICE > 0) {
+                const discountPrice = `${Number(jsonData.DCPRICE).toLocaleString()}원`;
+                console.log(`G마켓 JSON에서 할인가 추출: DCPRICE=${jsonData.DCPRICE} -> ${discountPrice}`);
+                return discountPrice;
+              }
+              if (jsonData.ORIGINPRICE && jsonData.ORIGINPRICE > 0) {
+                const originalPrice = `${Number(jsonData.ORIGINPRICE).toLocaleString()}원`;
+                console.log(`G마켓 JSON에서 원가 추출: ORIGINPRICE=${jsonData.ORIGINPRICE} -> ${originalPrice}`);
+                return originalPrice;
+              }
+            } catch (e) {
+              console.log('G마켓 JSON 파싱 실패:', e);
+            }
+          }
+          
+          // JSON 추출 실패시 DOM에서 추출
+          return $('.item_price .price_innerwrap .price_real .price').first().text().trim() ||
+                 $('.item_price .discount_price').first().text().trim() ||
+                 $('.price_real .price').first().text().trim() ||
+                 $('.item_price .price').first().text().trim() ||
+                 $('.product-price .price').first().text().trim() ||
+                 $('.prc_t .prc').first().text().trim() ||
+                 $('.real_price').first().text().trim() ||
+                 $('.sale_price').first().text().trim() ||
+                 $('#__itemDetailForm .prc_t .prc').first().text().trim() ||
+                 $('.box_item_price .price').first().text().trim() ||
+                 $('[data-montelena="item_price"]').first().text().trim() ||
+                 $('._price').first().text().trim() ||
+                 $('.price_num').first().text().trim() ||
+                 $('.price_value').first().text().trim() ||
+                 null;
+        })()
       ) : null) ||
       // 기타 사이트 전용 가격 추출
       // JSON-LD structured data
