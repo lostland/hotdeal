@@ -2,11 +2,13 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer } from 'ws';
 import { replDBStorage } from "./replDBStorage";
-import { insertLinkSchema } from "@shared/schema";
+import { insertLinkSchema, statistics } from "@shared/schema";
 import { fetchMetadata } from "./metadata";
 import multer from 'multer';
 import path from 'path';
 import { randomUUID } from 'crypto';
+import { db } from "./db";
+import { sql } from "drizzle-orm";
 
 let wss: WebSocketServer;
 
@@ -356,6 +358,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error removing URL:", error);
       res.status(500).json({ message: "Failed to remove URL" });
+    }
+  });
+
+  // Statistics API - 현재 통계 가져오기
+  app.get("/api/stats", async (req, res) => {
+    try {
+      // 통계 데이터가 없으면 초기화
+      let [stats] = await db.select().from(statistics);
+      
+      if (!stats) {
+        [stats] = await db.insert(statistics).values({
+          id: 'global',
+          visitorCount: 0,
+          shareCount: 0
+        }).returning();
+      }
+      
+      res.json({
+        visitorCount: stats.visitorCount,
+        shareCount: stats.shareCount
+      });
+    } catch (error) {
+      console.error("Error getting stats:", error);
+      res.status(500).json({ message: "Failed to get stats" });
+    }
+  });
+
+  // Statistics API - 방문자 수 증가
+  app.post("/api/stats/visit", async (req, res) => {
+    try {
+      // 통계 업데이트 (upsert)
+      const [stats] = await db
+        .insert(statistics)
+        .values({
+          id: 'global',
+          visitorCount: 1,
+          shareCount: 0
+        })
+        .onConflictDoUpdate({
+          target: statistics.id,
+          set: {
+            visitorCount: sql`${statistics.visitorCount} + 1`,
+            updatedAt: sql`now()`
+          }
+        })
+        .returning();
+
+      res.json({
+        visitorCount: stats.visitorCount,
+        shareCount: stats.shareCount
+      });
+    } catch (error) {
+      console.error("Error incrementing visit count:", error);
+      res.status(500).json({ message: "Failed to increment visit count" });
+    }
+  });
+
+  // Statistics API - 공유 수 증가
+  app.post("/api/stats/share", async (req, res) => {
+    try {
+      // 통계 업데이트 (upsert)
+      const [stats] = await db
+        .insert(statistics)
+        .values({
+          id: 'global',
+          visitorCount: 0,
+          shareCount: 1
+        })
+        .onConflictDoUpdate({
+          target: statistics.id,
+          set: {
+            shareCount: sql`${statistics.shareCount} + 1`,
+            updatedAt: sql`now()`
+          }
+        })
+        .returning();
+
+      res.json({
+        visitorCount: stats.visitorCount,
+        shareCount: stats.shareCount
+      });
+    } catch (error) {
+      console.error("Error incrementing share count:", error);
+      res.status(500).json({ message: "Failed to increment share count" });
     }
   });
 

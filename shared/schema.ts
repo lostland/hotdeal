@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -22,6 +22,13 @@ export const links = pgTable("links", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const statistics = pgTable("statistics", {
+  id: varchar("id").primaryKey().default(sql`'global'`),
+  visitorCount: integer("visitor_count").notNull().default(0),
+  shareCount: integer("share_count").notNull().default(0),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -38,7 +45,14 @@ export const insertLinkSchema = createInsertSchema(links).pick({
   note: true,
 });
 
+export const insertStatisticsSchema = createInsertSchema(statistics).pick({
+  visitorCount: true,
+  shareCount: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertLink = z.infer<typeof insertLinkSchema>;
 export type Link = typeof links.$inferSelect;
+export type InsertStatistics = z.infer<typeof insertStatisticsSchema>;
+export type Statistics = typeof statistics.$inferSelect;
