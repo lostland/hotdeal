@@ -134,6 +134,8 @@ export default function Home() {
       
       <main className="max-w-md mx-auto pb-20">
         <div className="px-4 pt-4">
+          
+          
           {isLoading ? (
             // Show loading cards
             Array.from({ length: 3 }).map((_, index) => (
@@ -164,6 +166,18 @@ export default function Home() {
                   </p>
                   <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
                     <strong>핫딜 레디!</strong>에서 오늘의 새로운 딜을 한눈에 만나보세요!
+
+                    {/* Admin 버튼 */}
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="w-10 h-10 rounded-full opacity-30 hover:opacity-60 transition-opacity duration-200 bg-background/80 backdrop-blur-sm border border-border/40"
+                      onClick={handleAdminClick}
+                      data-testid="button-admin-settings"
+                    >
+                      <Settings className="w-4 h-4 text-muted-foreground" />
+                    </Button>
+                    
                   </p>
                 </div>
               </div>
@@ -392,16 +406,7 @@ export default function Home() {
             </div>
           </div>
           
-          {/* Admin 버튼 */}
-          <Button
-            size="icon"
-            variant="ghost"
-            className="w-10 h-10 rounded-full opacity-30 hover:opacity-60 transition-opacity duration-200 bg-background/80 backdrop-blur-sm border border-border/40"
-            onClick={handleAdminClick}
-            data-testid="button-admin-settings"
-          >
-            <Settings className="w-4 h-4 text-muted-foreground" />
-          </Button>
+          
         </div>
       </main>
     </div>
