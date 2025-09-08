@@ -1,7 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Link } from "@shared/schema";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { AppHeader } from "@/components/app-header";
 import { LinkCard } from "@/components/link-card";
 import { LoadingCard } from "@/components/loading-card";
@@ -17,27 +17,35 @@ export default function Home() {
   // 빈 URL인 링크는 화면에 표시하지 않음
   const links = allLinks.filter(link => link.url && link.url.trim());
 
-  // 방문자수와 공유수 상태
-  const [visitorCount, setVisitorCount] = useState(0);
-  const [shareCount, setShareCount] = useState(0);
+  // 서버에서 통계 정보 가져오기
+  const { data: stats = { visitorCount: 0, shareCount: 0 } } = useQuery({
+    queryKey: ["/api/stats"],
+  });
 
-  // 페이지 로드 시 방문자수 증가 및 로컬스토리지에서 카운트 불러오기
+  // 방문자 수 증가 mutation
+  const visitMutation = useMutation({
+    mutationFn: () => apiRequest("/api/stats/visit", "POST"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+    },
+  });
+
+  // 공유 수 증가 mutation
+  const shareMutation = useMutation({
+    mutationFn: () => apiRequest("/api/stats/share", "POST"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
+    },
+  });
+
+  // 페이지 로드 시 방문자수 증가
   useEffect(() => {
-    const storedVisitorCount = parseInt(localStorage.getItem('visitorCount') || '0');
-    const storedShareCount = parseInt(localStorage.getItem('shareCount') || '0');
-    
-    const newVisitorCount = storedVisitorCount + 1;
-    setVisitorCount(newVisitorCount);
-    setShareCount(storedShareCount);
-    
-    localStorage.setItem('visitorCount', newVisitorCount.toString());
+    visitMutation.mutate();
   }, []);
 
   // 공유수 증가 함수
   const incrementShareCount = () => {
-    const newShareCount = shareCount + 1;
-    setShareCount(newShareCount);
-    localStorage.setItem('shareCount', newShareCount.toString());
+    shareMutation.mutate();
   };
 
   // 전역 공유 함수로 컨텍스트에 등록
@@ -46,7 +54,7 @@ export default function Home() {
     return () => {
       delete (window as any).incrementShareCount;
     };
-  }, [shareCount]);
+  }, [incrementShareCount]);
 
   // WebSocket 연결로 실시간 업데이트
   useEffect(() => {
@@ -376,11 +384,11 @@ export default function Home() {
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-1">
               <Eye className="w-4 h-4" />
-              <span>{visitorCount.toLocaleString()}</span>
+              <span>{stats.visitorCount.toLocaleString()}</span>
             </div>
             <div className="flex items-center gap-1">
               <Share2 className="w-4 h-4" />
-              <span>{shareCount.toLocaleString()}</span>
+              <span>{stats.shareCount.toLocaleString()}</span>
             </div>
           </div>
           
