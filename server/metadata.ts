@@ -5,6 +5,68 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 
+// Extract metadata from HTML string
+async function extractMetadataFromHTML(html: string, finalUrl: string) {
+  const $ = cheerio.load(html);
+  
+  // Extract domain
+  const urlObj = new URL(finalUrl);
+  const domain = urlObj.hostname;
+
+  // Extract metadata with more fallback options
+  let title = 
+    $('meta[property="og:title"]').attr('content') ||
+    $('meta[name="twitter:title"]').attr('content') ||
+    $('meta[name="title"]').attr('content') ||
+    $('title').text() ||
+    $('h1').first().text() ||
+    '';
+
+  let description = 
+    $('meta[property="og:description"]').attr('content') ||
+    $('meta[name="twitter:description"]').attr('content') ||
+    $('meta[name="description"]').attr('content') ||
+    $('meta[name="summary"]').attr('content') ||
+    '';
+
+  let image = 
+    $('meta[property="og:image"]').attr('content') ||
+    $('meta[name="twitter:image"]').attr('content') ||
+    $('meta[name="twitter:image:src"]').attr('content') ||
+    $('link[rel="apple-touch-icon"]').attr('href') ||
+    $('link[rel="icon"]').attr('href') ||
+    null;
+
+  // Clean up
+  title = title.trim().replace(/\s+/g, ' ');
+  description = description.trim().replace(/\s+/g, ' ');
+
+  if (image) {
+    try {
+      // Make relative URLs absolute
+      if (image.startsWith('/')) {
+        image = `${urlObj.protocol}//${urlObj.host}${image}`;
+      } else if (image.startsWith('//')) {
+        image = `${urlObj.protocol}${image}`;
+      } else if (!image.startsWith('http')) {
+        // Handle relative paths
+        const baseUrl = finalUrl.substring(0, finalUrl.lastIndexOf('/') + 1);
+        image = `${baseUrl}${image}`;
+      }
+    } catch (error) {
+      console.error('Error processing image URL:', error);
+      image = null;
+    }
+  }
+
+  return {
+    title: title || "제목 없음",
+    description: description || "설명 없음",
+    image,
+    domain
+  };
+}
+
 export async function unshortenWithCurl(url: string) {
   const args = [
     "-Ls",               // -L: 리디렉트 따라감, -s: quiet
@@ -86,6 +148,33 @@ export async function fetchMetadata(url: string) {
     let response = null;
     let lastError = null;
 
+    // Special handling for oliveyoung.co.kr (Cloudflare protected)
+    if (finalUrl.includes('oliveyoung.co.kr')) {
+      try {
+        console.log('올리브영 사이트 감지 - Puppeteer 사용');
+        const puppeteer = await import('puppeteer');
+        const browser = await puppeteer.default.launch({
+          headless: true,
+          args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+        });
+        const page = await browser.newPage();
+        await page.setUserAgent('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1');
+        
+        await page.goto(finalUrl, { waitUntil: 'networkidle2', timeout: 15000 });
+        await new Promise(resolve => setTimeout(resolve, 3000)); // Cloudflare 체크 대기
+        
+        const html = await page.content();
+        await browser.close();
+        
+        if (html && html.length > 1000) {
+          const metadata = await extractMetadataFromHTML(html, finalUrl);
+          return metadata;
+        }
+      } catch (error) {
+        console.error('Puppeteer 실패:', error);
+      }
+    }
+
     // Try each approach
     
     console.log(`${finalUrl}`)
@@ -134,6 +223,26 @@ export async function fetchMetadata(url: string) {
 
     const html = await response.text();
     const $ = cheerio.load(html);
+    
+    // Update domain if we have a different finalUrl after redirect
+    let finalDomain = domain;
+    if (finalUrl !== url) {
+      try {
+        const finalUrlObj = new URL(finalUrl);
+        finalDomain = finalUrlObj.hostname;
+      } catch {
+        finalDomain = domain;
+      }
+    }
+    
+    // 디버깅 정보는 필요시에만 활성화
+    console.log(`meta size = ${$('meta').length}`);
+    $('meta').each((i, el) => {
+      const $el = $(el);
+      const name = $el.attr('name') || $el.attr('property') || $el.attr('http-equiv') || 'unknown';
+      const content = $el.attr('content') || '';
+      console.log(`meta[${i}]: ${name} = "${content}"`);
+    });
 
     // Extract metadata with more fallback options
     let title = 
@@ -158,28 +267,6 @@ export async function fetchMetadata(url: string) {
       $('link[rel="apple-touch-icon"]').attr('href') ||
       $('link[rel="icon"]').attr('href') ||
       null;
-
-    // Update domain if we have a different finalUrl after redirect
-    let finalDomain = domain;
-    if (finalUrl !== url) {
-      try {
-        const finalUrlObj = new URL(finalUrl);
-        finalDomain = finalUrlObj.hostname;
-      } catch {
-        // Keep original domain if parsing fails
-        finalDomain = domain;
-      }
-    }
-
-    
-    // 디버깅 정보는 필요시에만 활성화
-    console.log(`meta size = ${$('meta').length}`);
-    $('meta').each((i, el) => {
-      const $el = $(el);
-      const name = $el.attr('name') || $el.attr('property') || $el.attr('http-equiv') || 'unknown';
-      const content = $el.attr('content') || '';
-      console.log(`meta[${i}]: ${name} = "${content}"`);
-    });
 
 
     // Extract price information with site-specific selectors
