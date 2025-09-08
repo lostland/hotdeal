@@ -151,6 +151,18 @@ export async function fetchMetadata(url: string) {
       $('meta[name="summary"]').attr('content') ||
       '';
 
+    // G마켓에서는 description을 가격으로 사용하지 않음 (잘못된 데이터 방지)
+    let ogDescription = $('meta[property="og:description"]').attr('content') || '';
+    let twitterDescription = $('meta[name="twitter:description"]').attr('content') || '';
+    
+    // G마켓에서 "0.0000원" 같은 잘못된 가격 데이터 방지
+    if (domain.includes('gmarket') && (
+      ogDescription.match(/^[\d\.,]+원$/) || 
+      twitterDescription.match(/^[\d\.,]+원$/)
+    )) {
+      console.log(`G마켓 메타데이터 가격 스킵: og="${ogDescription}", twitter="${twitterDescription}"`);
+    }
+
     let image = 
       $('meta[property="og:image"]').attr('content') ||
       $('meta[name="twitter:image"]').attr('content') ||
@@ -217,22 +229,25 @@ export async function fetchMetadata(url: string) {
         $('.price_info .sale_price').first().text().trim() ||
         null
       ) : null) ||
-      // G마켓 specific price selectors (more comprehensive)
-      $('.item_price .price_innerwrap .price_real .price').first().text().trim() ||
-      $('.item_price .discount_price').first().text().trim() ||
-      $('.price_real .price').first().text().trim() ||
-      $('.item_price .price').first().text().trim() ||
-      $('.product-price .price').first().text().trim() ||
-      $('.prc_t .prc').first().text().trim() ||
-      $('.real_price').first().text().trim() ||
-      $('.sale_price').first().text().trim() ||
-      $('#__itemDetailForm .prc_t .prc').first().text().trim() ||
-      // Additional G마켓 selectors
-      $('.box_item_price .price').first().text().trim() ||
-      $('[data-montelena="item_price"]').first().text().trim() ||
-      $('._price').first().text().trim() ||
-      $('.price_num').first().text().trim() ||
-      $('.price_value').first().text().trim() ||
+      // G마켓 전용: DOM에서 가격 추출 (메타데이터 무시)
+      (finalDomain.includes('gmarket') ? (
+        $('.item_price .price_innerwrap .price_real .price').first().text().trim() ||
+        $('.item_price .discount_price').first().text().trim() ||
+        $('.price_real .price').first().text().trim() ||
+        $('.item_price .price').first().text().trim() ||
+        $('.product-price .price').first().text().trim() ||
+        $('.prc_t .prc').first().text().trim() ||
+        $('.real_price').first().text().trim() ||
+        $('.sale_price').first().text().trim() ||
+        $('#__itemDetailForm .prc_t .prc').first().text().trim() ||
+        $('.box_item_price .price').first().text().trim() ||
+        $('[data-montelena="item_price"]').first().text().trim() ||
+        $('._price').first().text().trim() ||
+        $('.price_num').first().text().trim() ||
+        $('.price_value').first().text().trim() ||
+        null
+      ) : null) ||
+      // 기타 사이트 전용 가격 추출
       // JSON-LD structured data
       $('script[type="application/ld+json"]').toArray().map(script => {
         try {
