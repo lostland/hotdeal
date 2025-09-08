@@ -27,7 +27,7 @@ export default function Home() {
 
   // 방문자 수 증가 mutation
   const visitMutation = useMutation({
-    mutationFn: () => apiRequest("/api/stats/visit", "POST"),
+    mutationFn: () => apiRequest("POST", "/api/stats/visit"),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
     },
@@ -35,7 +35,7 @@ export default function Home() {
 
   // 공유 수 증가 mutation
   const shareMutation = useMutation({
-    mutationFn: () => apiRequest("/api/stats/share", "POST"),
+    mutationFn: () => apiRequest( "POST", "/api/stats/share"),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/stats"] });
     },
