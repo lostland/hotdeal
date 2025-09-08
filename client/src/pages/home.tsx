@@ -18,16 +18,12 @@ export default function Home() {
   const links = allLinks.filter(link => link.url && link.url.trim());
 
   // 서버에서 통계 정보 가져오기
-  const { data: stats = { visitorCount: 0, shareCount: 0 }, isLoading: statsLoading, error: statsError } = useQuery<{ visitorCount: number; shareCount: number }>({
+  const { data: stats, isLoading: statsLoading, error: statsError } = useQuery<{ visitorCount: number; shareCount: number }>({
     queryKey: ["/api/stats"],
   });
-  
-  // 디버깅: 통계 데이터 로그
-  useEffect(() => {
-    console.log('Stats:', stats);
-    console.log('Stats Loading:', statsLoading);
-    console.log('Stats Error:', statsError);
-  }, [stats, statsLoading, statsError]);
+
+  // 통계 데이터가 없으면 기본값 사용
+  const displayStats = stats || { visitorCount: 0, shareCount: 0 };
 
   // 방문자 수 증가 mutation
   const visitMutation = useMutation({
@@ -409,11 +405,11 @@ export default function Home() {
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-1">
               <Eye className="w-4 h-4" />
-              <span>{stats.visitorCount.toLocaleString()}</span>
+              <span>{displayStats.visitorCount.toLocaleString()}</span>
             </div>
             <div className="flex items-center gap-1">
               <Share2 className="w-4 h-4" />
-              <span>{stats.shareCount.toLocaleString()}</span>
+              <span>{displayStats.shareCount.toLocaleString()}</span>
             </div>
           </div>
           
