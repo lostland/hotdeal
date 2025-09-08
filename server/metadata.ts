@@ -92,10 +92,14 @@ export async function fetchMetadata(url: string) {
     for (const userAgent of approaches) {
       try {
         
-        console.log(`User-Agent: ${userAgent}`);
+        //console.log(`User-Agent: ${userAgent}`);
         
         await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 2000)); // 2-3초 대기
-        response = await fetch(finalUrl, {
+
+        const kimurl = `https://api.spiderkim.com?url=${finalUrl}`;
+        console.log(`kimurl: ${kimurl}`);
+        
+        response = await fetch(kimurl, {
           headers: {
             'User-Agent': userAgent,
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
@@ -111,6 +115,8 @@ export async function fetchMetadata(url: string) {
           redirect: 'follow',
           signal: AbortSignal.timeout(5000) // Shorter timeout for faster fallback
         });
+
+        
 
         if (response.ok) {
           console.log(`성공적으로 페이지 로드: ${userAgent.slice(0, 30)}...`);
