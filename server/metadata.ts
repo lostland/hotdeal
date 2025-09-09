@@ -56,10 +56,25 @@ export async function fetchMetadata(url: string) {
         console.log("try curl");
 
         finalUrl = await unshortenWithCurl(url);
+
+        if( res.ok )
+        {
+          const html = await res.text();
+          const $ = cheerio.load(html);
+          let url2 = $('meta[property="og:url"]').attr('content') ;
+          if( url2 )
+          {
+            finalUrl = url2;
+            console.log(`og:url로 최종 URL 변경: ${finalUrl}`);
+          }
+          
+        }
       }
-
-      finalUrl = res.url;
-
+      else
+      {
+        finalUrl = res.url;
+      }
+      
       // 교차 출처 + CORS 미허용이면 res.url이 신뢰 안 될 수 있음
       //let finalUrl = res.url && res.url !== url ? res.url : url;
       //finalUrl = await unshorten(url);
