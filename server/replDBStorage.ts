@@ -261,10 +261,30 @@ export class ReplDBStorage {
     
     if (linkIndex === -1) return false;
     
+    const currentLink = data.links[linkIndex];
+    
+    // 제목 처리: 현재 제목과 새로운 메타데이터 제목이 다르면 사용자가 수정한 것으로 간주하고 유지
+    let finalTitle = currentLink.title;
+    if (metadata.title) {
+      // 현재 제목이 없거나 빈 문자열이면 새로운 제목 사용
+      if (!currentLink.title || currentLink.title.trim() === '') {
+        finalTitle = metadata.title;
+      }
+      // 현재 제목과 새로운 제목이 같으면 새로운 제목 사용 (메타데이터 업데이트)
+      else if (currentLink.title === metadata.title) {
+        finalTitle = metadata.title;
+      }
+      // 현재 제목과 새로운 제목이 다르면 현재 제목 유지 (사용자 수정으로 간주)
+      else {
+        finalTitle = currentLink.title;
+        console.log(`제목 수정 감지 - 기존 제목 유지: "${currentLink.title}" (새 메타데이터: "${metadata.title}")`);
+      }
+    }
+    
     // 메타데이터 업데이트 (기존 customImage와 note는 유지)
     data.links[linkIndex] = {
       ...data.links[linkIndex],
-      title: metadata.title || data.links[linkIndex].title,
+      title: finalTitle,
       description: metadata.description || data.links[linkIndex].description,
       image: metadata.image || data.links[linkIndex].image,
       price: metadata.price || data.links[linkIndex].price,
