@@ -10,6 +10,8 @@ import { ExternalLink, Settings, Eye, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Home() {
+  const [isAdmin, setIsAdmin] = useState(false);
+
   const { data: allLinks = [], isLoading, error, refetch } = useQuery<Link[]>({
     queryKey: ["/api/links"],
   });
@@ -21,6 +23,12 @@ export default function Home() {
   const { data: stats, isLoading: statsLoading, error: statsError } = useQuery<{ visitorCount: number; shareCount: number }>({
     queryKey: ["/api/stats"],
   });
+
+  // Admin 로그인 상태 확인
+  useEffect(() => {
+    const adminUsername = localStorage.getItem('adminUsername');
+    setIsAdmin(!!adminUsername);
+  }, []);
 
   // 통계 데이터가 없으면 기본값 사용
   const displayStats = stats || { visitorCount: 0, shareCount: 0 };
