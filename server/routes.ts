@@ -320,7 +320,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { oldUrl, newUrl, title, note, customImage } = req.body;
       
-      if (oldUrl === undefined || oldUrl === null || newUrl === undefined || newUrl === null) {
+      //if (oldUrl === undefined || oldUrl === null || newUrl === undefined || newUrl === null) 
+      if (newUrl === undefined || newUrl === null) 
+      {
         return res.status(400).json({ message: "Old URL and new URL are required" });
       }
 
@@ -330,7 +332,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedLink = await replDBStorage.updateUrl(oldUrl, newUrl, title, note, normalizedImage);
       
       // URL이 변경된 경우 메타데이터 자동 새로고침
-      if (oldUrl !== newUrl) {
+      //if (oldUrl !== newUrl) 
+      {
         try {
           console.log(`URL 변경 감지: ${oldUrl} -> ${newUrl}, 메타데이터 새로고침 시작`);
           const metadata = await fetchMetadata(newUrl);
