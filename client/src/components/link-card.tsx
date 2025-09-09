@@ -265,7 +265,7 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, sh
             <Button
               size="icon"
               variant="secondary"
-              className="absolute top-2 right-2 w-8 h-8 rounded-full opacity-200 hover:opacity-100 bg-black/90 hover:bg-gray"
+              className="absolute top-2 right-2 w-8 h-8 rounded-full opacity-100 hover:opacity-100 bg-black/10 hover:bg-gray"
               onClick={handleSettingsClick}
               data-testid={`button-settings-${link.id}`}
             >
