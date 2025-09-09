@@ -329,6 +329,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const updatedLink = await replDBStorage.updateUrl(oldUrl, newUrl, title, note, normalizedImage);
       
+      // URL이 변경된 경우 메타데이터 자동 새로고침
+      if (oldUrl !== newUrl) {
+        try {
+          console.log(`URL 변경 감지: ${oldUrl} -> ${newUrl}, 메타데이터 새로고침 시작`);
+          const metadata = await fetchMetadata(newUrl);
+          if (metadata && updatedLink.id) {
+            await replDBStorage.updateLinkMetadata(updatedLink.id, metadata);
+            console.log(`메타데이터 자동 새로고침 완료: ${updatedLink.id}`);
+          }
+        } catch (metaError) {
+          console.log(`메타데이터 자동 새로고침 실패: ${metaError}`);
+          // 메타데이터 실패는 무시하고 계속 진행
+        }
+      }
+      
       // WebSocket으로 실시간 업데이트 브로드캐스트
       if (wss) {
         wss.clients.forEach((client) => {
