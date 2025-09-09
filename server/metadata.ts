@@ -32,7 +32,7 @@ export async function fetchMetadata(url: string) {
     console.log(`----------------------------------------------------------`);
     
     // For redirect links, try to get the actual product URL first
-    if (url.includes('link.') ||url.includes('click.kakao') ) {
+    if (url.includes('link.') || url.includes('click.kakao') || url.includes('ozip.me') ) {
       console.log('리디렉트 링크 감지, 실제 URL 가져오기 시도...');
 
       const res = await fetch(url, {
