@@ -30,6 +30,7 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, sh
   const [editTitle, setEditTitle] = useState(link.title || '');
   const [editNote, setEditNote] = useState(link.note || '');
   const [editCustomImage, setEditCustomImage] = useState(link.customImage || '');
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const { toast } = useToast();
 
   // Check if note exists (non-empty, trimmed)
@@ -162,6 +163,49 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, sh
     setShowEditModal(false);
   };
 
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // 파일 크기 체크 (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: '오류', description: '파일 크기가 너무 큽니다. 최대 10MB까지 가능합니다.', variant: 'destructive' });
+      return;
+    }
+
+    // 이미지 파일인지 체크
+    if (!file.type.startsWith('image/')) {
+      toast({ title: '오류', description: '이미지 파일만 업로드 가능합니다.', variant: 'destructive' });
+      return;
+    }
+
+    setIsUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      
+      const response = await fetch('/api/images/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('업로드에 실패했습니다.');
+      }
+
+      const data = await response.json();
+      setEditCustomImage(data.imageUrl);
+      toast({ title: '성공', description: '이미지가 업로드되었습니다.' });
+    } catch (error) {
+      console.error('업로드 오류:', error);
+      toast({ title: '오류', description: '이미지 업로드에 실패했습니다.', variant: 'destructive' });
+    } finally {
+      setIsUploadingImage(false);
+      // input 값 리셋
+      event.target.value = '';
+    }
+  };
+
   return (
     <article 
       ref={cardRef}
@@ -221,7 +265,7 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, sh
             <Button
               size="icon"
               variant="secondary"
-              className="absolute top-2 right-12 w-8 h-8 rounded-full opacity-80 hover:opacity-100 bg-white/90 hover:bg-white"
+              className="absolute top-2 right-2 w-8 h-8 rounded-full opacity-200 hover:opacity-100 bg-black/90 hover:bg-gray"
               onClick={handleSettingsClick}
               data-testid={`button-settings-${link.id}`}
             >
@@ -333,13 +377,47 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, sh
               />
             </div>
             <div>
-              <Label htmlFor="edit-image">커스텀 이미지 URL</Label>
-              <Input
-                id="edit-image"
-                value={editCustomImage}
-                onChange={(e) => setEditCustomImage(e.target.value)}
-                placeholder="/api/images/... 또는 외부 URL"
-              />
+              <Label htmlFor="edit-image">커스텀 이미지</Label>
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Input
+                    id="edit-image"
+                    value={editCustomImage}
+                    onChange={(e) => setEditCustomImage(e.target.value)}
+                    placeholder="/api/images/... 또는 외부 URL"
+                    className="flex-1"
+                  />
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      disabled={isUploadingImage}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={isUploadingImage}
+                      className="px-3"
+                    >
+                      {isUploadingImage ? '업로드 중...' : '파일 선택'}
+                    </Button>
+                  </div>
+                </div>
+                {editCustomImage && (
+                  <div className="mt-2">
+                    <img
+                      src={editCustomImage}
+                      alt="미리보기"
+                      className="w-20 h-20 object-cover rounded border"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
             <div className="flex gap-2 pt-4">
               <Button 
