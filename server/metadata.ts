@@ -210,163 +210,152 @@ export async function fetchMetadata(url: string) {
 
 
     // Extract price information with site-specific selectors
-    let price = 
-      $('meta[property="product:price:amount"]').attr('content') ||
-      $('meta[property="product:price"]').attr('content') ||
-      // 11번가: 먼저 메타데이터에서 가격 추출
-      (finalDomain.includes('11st.co.kr') ? (
-        // 메타 태그에서 가격 추출 (가장 신뢰도 높음)
-        (() => {
-          const ogDesc = $('meta[property="og:description"]').attr('content') || '';
-          const desc = $('meta[name="description"]').attr('content') || '';
-          
-          // "가격 : 19,900원" 형식에서 추출
-          let priceFromMeta = ogDesc.match(/가격\s*:\s*([0-9,]+원)/)?.[1] ||
-                            desc.match(/가격\s*:\s*([0-9,]+원)/)?.[1] ||
-                            ogDesc.match(/할인모음가:\s*([0-9,]+원)/)?.[1] ||
-                            desc.match(/할인모음가:\s*([0-9,]+원)/)?.[1];
-                            
-          console.log(`11번가 메타데이터에서 가격 추출: "${priceFromMeta}"`);
-          return priceFromMeta;
-        })() ||
+    let price = null;
+
+    // 사이트별 전용 가격 추출 로직
+    if (finalDomain.includes('11st.co.kr')) {
+      // 11번가: 메타데이터에서 가격 추출
+      const ogDesc = $('meta[property="og:description"]').attr('content') || '';
+      const desc = $('meta[name="description"]').attr('content') || '';
+      
+      // "가격 : 19,900원" 형식에서 추출
+      let priceFromMeta = ogDesc.match(/가격\s*:\s*([0-9,]+원)/)?.[1] ||
+                        desc.match(/가격\s*:\s*([0-9,]+원)/)?.[1] ||
+                        ogDesc.match(/할인모음가:\s*([0-9,]+원)/)?.[1] ||
+                        desc.match(/할인모음가:\s*([0-9,]+원)/)?.[1];
+                        
+      if (priceFromMeta) {
+        console.log(`11번가 메타데이터에서 가격 추출: "${priceFromMeta}"`);
+        price = priceFromMeta;
+      } else {
         // 메타데이터 추출 실패시 DOM에서 시도
-        $('.prc_t .prc').first().text().trim() ||
-        $('.sale_price').first().text().trim() ||
-        $('.price_real').first().text().trim() ||
-        $('.prd_price .price').first().text().trim() ||
-        $('.total_price .price').first().text().trim() ||
-        $('.selling_price').first().text().trim() ||
-        $('.current_price').first().text().trim() ||
-        $('.prc_price').first().text().trim() ||
-        $('.c_prd_price .sale').first().text().trim() ||
-        $('.price_innfo .sale_price').first().text().trim() ||
-        $('.price_wrap .price').first().text().trim() ||
-        $('.price_info .sale_price').first().text().trim() ||
-        null
-      ) : null) ||
-      // 옥션 전용: JavaScript UtsPvalue 객체에서 할인가 추출
-      (finalDomain.includes('auction.co.kr') ? (
-        (() => {
-          // JavaScript에서 UtsPvalue 객체 찾기
-          const scriptContent = $.html();
-          const utsPvalueMatch = scriptContent.match(/var UtsPvalue = \{([^}]+)\}/);
-          if (utsPvalueMatch) {
-            try {
-              // DCPRICE와 ORIGINPRICE 추출
-              const dcpriceMatch = utsPvalueMatch[1].match(/DCPRICE:\s*"([^"]+)"/);
-              const origpriceMatch = utsPvalueMatch[1].match(/ORIGINPRICE:\s*"([^"]+)"/);
-              
-              if (dcpriceMatch && dcpriceMatch[1]) {
-                const dcPrice = dcpriceMatch[1].replace(/,/g, '');
-                if (dcPrice && !isNaN(Number(dcPrice))) {
-                  const formattedPrice = `${Number(dcPrice).toLocaleString()}원`;
-                  console.log(`옥션 JavaScript에서 할인가 추출: DCPRICE=${dcpriceMatch[1]} -> ${formattedPrice}`);
-                  return formattedPrice;
-                }
-              }
-              
-              if (origpriceMatch && origpriceMatch[1]) {
-                const origPrice = origpriceMatch[1].replace(/,/g, '');
-                if (origPrice && !isNaN(Number(origPrice))) {
-                  const formattedPrice = `${Number(origPrice).toLocaleString()}원`;
-                  console.log(`옥션 JavaScript에서 원가 추출: ORIGINPRICE=${origpriceMatch[1]} -> ${formattedPrice}`);
-                  return formattedPrice;
-                }
-              }
-            } catch (e) {
-              console.log('옥션 JavaScript 파싱 실패:', e);
-            }
-          }
-          
-          // 메타태그에서 추출
-          const ogDesc = $('meta[property="og:description"]').attr('content') || '';
-          const desc = $('meta[name="description"]').attr('content') || '';
-          
-          if (ogDesc.match(/^\d{1,3}(,\d{3})*원$/)) {
-            console.log(`옥션 메타태그에서 가격 추출: og:description="${ogDesc}"`);
-            return ogDesc;
-          }
-          
-          if (desc.match(/^\d{1,3}(,\d{3})*원$/)) {
-            console.log(`옥션 메타태그에서 가격 추출: description="${desc}"`);
-            return desc;
-          }
-          
-          return null;
-        })()
-      ) : null) ||
-      // G마켓 전용: JSON 데이터에서 할인가 추출
-      (finalDomain.includes('gmarket') ? (
-        (() => {
-          // JSON 구조화 데이터에서 할인가 추출
-          const jsonScripts = $('meta[name="uts-pvalue"]').attr('content');
-          if (jsonScripts) {
-            try {
-              const jsonData = JSON.parse(jsonScripts);
-              if (jsonData.DCPRICE && jsonData.DCPRICE > 0) {
-                const discountPrice = `${Number(jsonData.DCPRICE).toLocaleString()}원`;
-                console.log(`G마켓 JSON에서 할인가 추출: DCPRICE=${jsonData.DCPRICE} -> ${discountPrice}`);
-                return discountPrice;
-              }
-              if (jsonData.ORIGINPRICE && jsonData.ORIGINPRICE > 0) {
-                const originalPrice = `${Number(jsonData.ORIGINPRICE).toLocaleString()}원`;
-                console.log(`G마켓 JSON에서 원가 추출: ORIGINPRICE=${jsonData.ORIGINPRICE} -> ${originalPrice}`);
-                return originalPrice;
-              }
-            } catch (e) {
-              console.log('G마켓 JSON 파싱 실패:', e);
-            }
-          }
-          
-          // JSON 추출 실패시 DOM에서 추출
-          return $('.item_price .price_innerwrap .price_real .price').first().text().trim() ||
-                 $('.item_price .discount_price').first().text().trim() ||
-                 $('.price_real .price').first().text().trim() ||
-                 $('.item_price .price').first().text().trim() ||
-                 $('.product-price .price').first().text().trim() ||
-                 $('.prc_t .prc').first().text().trim() ||
-                 $('.real_price').first().text().trim() ||
-                 $('.sale_price').first().text().trim() ||
-                 $('#__itemDetailForm .prc_t .prc').first().text().trim() ||
-                 $('.box_item_price .price').first().text().trim() ||
-                 $('[data-montelena="item_price"]').first().text().trim() ||
-                 $('._price').first().text().trim() ||
-                 $('.price_num').first().text().trim() ||
-                 $('.price_value').first().text().trim() ||
-                 null;
-        })()
-      ) : null) ||
-      // 우체국쇼핑 전용: description에서 가격 추출
-      (finalDomain.includes('mall.epost.go.kr') ? (
-        (() => {
-          const ogDesc = $('meta[property="og:description"]').attr('content') || '';
-          const desc = $('meta[name="description"]').attr('content') || '';
-          
-          // "가격 : 15,990원" 형식에서 추출
-          let priceFromMeta = ogDesc.match(/가격\s*:\s*([0-9,]+원)/)?.[1] ||
-                            desc.match(/가격\s*:\s*([0-9,]+원)/)?.[1];
-                            
-          return priceFromMeta;
-        })()
-      ) : null) ||
-      // 기타 사이트 전용 가격 추출
-      // JSON-LD structured data
-      $('script[type="application/ld+json"]').toArray().map(script => {
+        price = $('.prc_t .prc').first().text().trim() ||
+                $('.sale_price').first().text().trim() ||
+                $('.price_real').first().text().trim() ||
+                $('.prd_price .price').first().text().trim() ||
+                $('.total_price .price').first().text().trim() ||
+                $('.selling_price').first().text().trim() ||
+                $('.current_price').first().text().trim() ||
+                $('.prc_price').first().text().trim() ||
+                $('.c_prd_price .sale').first().text().trim() ||
+                $('.price_innfo .sale_price').first().text().trim() ||
+                $('.price_wrap .price').first().text().trim() ||
+                $('.price_info .sale_price').first().text().trim() ||
+                null;
+      }
+    } else if (finalDomain.includes('auction.co.kr')) {
+      // 옥션: JavaScript UtsPvalue 객체에서 할인가 추출
+      const scriptContent = $.html();
+      const utsPvalueMatch = scriptContent.match(/var UtsPvalue = \{([^}]+)\}/);
+      if (utsPvalueMatch) {
         try {
-          const json = JSON.parse($(script).html() || '{}');
-          if (json['@type'] === 'Product' && json.offers && json.offers.price) {
-            return json.offers.price + '원';
+          // DCPRICE와 ORIGINPRICE 추출
+          const dcpriceMatch = utsPvalueMatch[1].match(/DCPRICE:\s*"([^"]+)"/);
+          const origpriceMatch = utsPvalueMatch[1].match(/ORIGINPRICE:\s*"([^"]+)"/);
+          
+          if (dcpriceMatch && dcpriceMatch[1]) {
+            const dcPrice = dcpriceMatch[1].replace(/,/g, '');
+            if (dcPrice && !isNaN(Number(dcPrice))) {
+              price = `${Number(dcPrice).toLocaleString()}원`;
+              console.log(`옥션 JavaScript에서 할인가 추출: DCPRICE=${dcpriceMatch[1]} -> ${price}`);
+            }
+          } else if (origpriceMatch && origpriceMatch[1]) {
+            const origPrice = origpriceMatch[1].replace(/,/g, '');
+            if (origPrice && !isNaN(Number(origPrice))) {
+              price = `${Number(origPrice).toLocaleString()}원`;
+              console.log(`옥션 JavaScript에서 원가 추출: ORIGINPRICE=${origpriceMatch[1]} -> ${price}`);
+            }
           }
-          return null;
-        } catch { return null; }
-      }).find(p => p) ||
-      // General selectors
-      $('.price').first().text().trim() ||
-      $('.cost').first().text().trim() ||
-      $('.sale-price').first().text().trim() ||
-      $('.current-price').first().text().trim() ||
-      $('[class*="price"]').first().text().trim() ||
-      null;
+        } catch (e) {
+          console.log('옥션 JavaScript 파싱 실패:', e);
+        }
+      }
+      
+      if (!price) {
+        // 메타태그에서 추출
+        const ogDesc = $('meta[property="og:description"]').attr('content') || '';
+        const desc = $('meta[name="description"]').attr('content') || '';
+        
+        if (ogDesc.match(/^\d{1,3}(,\d{3})*원$/)) {
+          console.log(`옥션 메타태그에서 가격 추출: og:description="${ogDesc}"`);
+          price = ogDesc;
+        } else if (desc.match(/^\d{1,3}(,\d{3})*원$/)) {
+          console.log(`옥션 메타태그에서 가격 추출: description="${desc}"`);
+          price = desc;
+        }
+      }
+    } else if (finalDomain.includes('gmarket')) {
+      // G마켓: JSON 데이터에서 할인가 추출
+      const jsonScripts = $('meta[name="uts-pvalue"]').attr('content');
+      if (jsonScripts) {
+        try {
+          const jsonData = JSON.parse(jsonScripts);
+          if (jsonData.DCPRICE && jsonData.DCPRICE > 0) {
+            price = `${Number(jsonData.DCPRICE).toLocaleString()}원`;
+            console.log(`G마켓 JSON에서 할인가 추출: DCPRICE=${jsonData.DCPRICE} -> ${price}`);
+          } else if (jsonData.ORIGINPRICE && jsonData.ORIGINPRICE > 0) {
+            price = `${Number(jsonData.ORIGINPRICE).toLocaleString()}원`;
+            console.log(`G마켓 JSON에서 원가 추출: ORIGINPRICE=${jsonData.ORIGINPRICE} -> ${price}`);
+          }
+        } catch (e) {
+          console.log('G마켓 JSON 파싱 실패:', e);
+        }
+      }
+      
+      if (!price) {
+        // JSON 추출 실패시 DOM에서 추출
+        price = $('.item_price .price_innerwrap .price_real .price').first().text().trim() ||
+                $('.item_price .discount_price').first().text().trim() ||
+                $('.price_real .price').first().text().trim() ||
+                $('.item_price .price').first().text().trim() ||
+                $('.product-price .price').first().text().trim() ||
+                $('.prc_t .prc').first().text().trim() ||
+                $('.real_price').first().text().trim() ||
+                $('.sale_price').first().text().trim() ||
+                $('#__itemDetailForm .prc_t .prc').first().text().trim() ||
+                $('.box_item_price .price').first().text().trim() ||
+                $('[data-montelena="item_price"]').first().text().trim() ||
+                $('._price').first().text().trim() ||
+                $('.price_num').first().text().trim() ||
+                $('.price_value').first().text().trim() ||
+                null;
+      }
+    } else if (finalDomain.includes('mall.epost.go.kr')) {
+      // 우체국쇼핑: description에서 가격 추출
+      const ogDesc = $('meta[property="og:description"]').attr('content') || '';
+      const desc = $('meta[name="description"]').attr('content') || '';
+      
+      // "가격 : 15,990원" 형식에서 추출
+      price = ogDesc.match(/가격\s*:\s*([0-9,]+원)/)?.[1] ||
+              desc.match(/가격\s*:\s*([0-9,]+원)/)?.[1] ||
+              null;
+    }
+
+    // 사이트별 전용 로직에서 가격을 찾지 못한 경우에만 일반 추출 시도
+    if (!price) {
+      price = $('meta[property="product:price:amount"]').attr('content') ||
+              $('meta[property="product:price"]').attr('content') ||
+              // JSON-LD structured data
+              (() => {
+                const jsonPrice = $('script[type="application/ld+json"]').toArray().map(script => {
+                  try {
+                    const json = JSON.parse($(script).html() || '{}');
+                    if (json['@type'] === 'Product' && json.offers && json.offers.price) {
+                      return json.offers.price + '원';
+                    }
+                    return null;
+                  } catch { return null; }
+                }).find(p => p);
+                return jsonPrice;
+              })() ||
+              // General selectors
+              $('.price').first().text().trim() ||
+              $('.cost').first().text().trim() ||
+              $('.sale-price').first().text().trim() ||
+              $('.current-price').first().text().trim() ||
+              $('[class*="price"]').first().text().trim() ||
+              null;
+    }
 
     // Debug: Log what price we found (11번가만)
     if (finalDomain.includes('11st.co.kr')) {
