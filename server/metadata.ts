@@ -270,6 +270,19 @@ export async function fetchMetadata(url: string) {
                  null;
         })()
       ) : null) ||
+      // 우체국쇼핑 전용: description에서 가격 추출
+      (finalDomain.includes('mall.epost.go.kr') ? (
+        (() => {
+          const ogDesc = $('meta[property="og:description"]').attr('content') || '';
+          const desc = $('meta[name="description"]').attr('content') || '';
+          
+          // "가격 : 15,990원" 형식에서 추출
+          let priceFromMeta = ogDesc.match(/가격\s*:\s*([0-9,]+원)/)?.[1] ||
+                            desc.match(/가격\s*:\s*([0-9,]+원)/)?.[1];
+                            
+          return priceFromMeta;
+        })()
+      ) : null) ||
       // 기타 사이트 전용 가격 추출
       // JSON-LD structured data
       $('script[type="application/ld+json"]').toArray().map(script => {
@@ -306,6 +319,14 @@ export async function fetchMetadata(url: string) {
     // Use extracted title only - no fallback
 
     // Use extracted description only - no fallback
+
+    // 우체국쇼핑 특별 처리: description에서 가격 추출
+    if (finalDomain.includes('mall.epost.go.kr') && description && description.includes('가격 :')) {
+      const priceMatch = description.match(/가격\s*:\s*([0-9,]+원)/);
+      if (priceMatch) {
+        price = priceMatch[1];
+      }
+    }
 
     // Use extracted image only - no hardcoded fallbacks
     if (!image && finalDomain.includes('gmarket') && productCode) {

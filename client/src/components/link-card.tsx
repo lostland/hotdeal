@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { KakaoShareButton } from "./kakao-share-button";
 import { useState, useEffect, useRef } from "react";
+import { ConsoleLogWriter } from "drizzle-orm";
 
 interface LinkCardProps {
   link: Link;
@@ -20,6 +21,12 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, cl
 
   // Check if note exists (non-empty, trimmed)
   const hasNote = !!link.note?.trim();
+
+  console.log(`Card -----------------------`);
+  console.log(`${link.id.slice(0, 12)}:`, link);
+  console.log(`Note: "${link.note}"`);
+  console.log(`Price: "${link.price}"`);
+  console.log(`hasNote: "${hasNote}"`);
 
   // Fetch real-time price if link.price is null and no note exists
   const { data: priceData, isLoading: priceLoading } = useQuery<{price: string | null; linkId: string}>({
