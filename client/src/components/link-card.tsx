@@ -1,23 +1,36 @@
 import { Link } from "@shared/schema";
-import { ExternalLink, Trash2 } from "lucide-react";
+import { ExternalLink, Trash2, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { KakaoShareButton } from "./kakao-share-button";
 import { useState, useEffect, useRef } from "react";
 import { ConsoleLogWriter } from "drizzle-orm";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface LinkCardProps {
   link: Link;
   onClick: () => void;
   onDelete?: () => void;
   hideDeleteButton?: boolean;
+  showSettingsButton?: boolean;
   className?: string;
 }
 
-export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, className, ...props }: LinkCardProps) {
+export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, showSettingsButton = false, className, ...props }: LinkCardProps) {
   const cardRef = useRef<HTMLElement>(null);
   const [isInCenter, setIsInCenter] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editUrl, setEditUrl] = useState(link.url);
+  const [editTitle, setEditTitle] = useState(link.title || '');
+  const [editNote, setEditNote] = useState(link.note || '');
+  const [editCustomImage, setEditCustomImage] = useState(link.customImage || '');
+  const { toast } = useToast();
 
   // Check if note exists (non-empty, trimmed)
   const hasNote = !!link.note?.trim();
@@ -110,6 +123,45 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, cl
     e.stopPropagation();
   };
 
+  const handleSettingsClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowEditModal(true);
+  };
+
+  // URL 수정 뮤테이션
+  const updateLinkMutation = useMutation({
+    mutationFn: async (data: { oldUrl: string; newUrl: string; title: string; note: string; customImage: string }) => {
+      return apiRequest('PUT', '/api/admin/urls', data);
+    },
+    onSuccess: () => {
+      toast({ title: '성공', description: '링크가 수정되었습니다.' });
+      queryClient.invalidateQueries({ queryKey: ['/api/links'] });
+      setShowEditModal(false);
+    },
+    onError: (error: any) => {
+      toast({ title: '오류', description: error.message || '링크 수정에 실패했습니다.', variant: 'destructive' });
+    },
+  });
+
+  const handleSaveEdit = () => {
+    updateLinkMutation.mutate({
+      oldUrl: link.url,
+      newUrl: editUrl,
+      title: editTitle,
+      note: editNote,
+      customImage: editCustomImage,
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditUrl(link.url);
+    setEditTitle(link.title || '');
+    setEditNote(link.note || '');
+    setEditCustomImage(link.customImage || '');
+    setShowEditModal(false);
+  };
+
   return (
     <article 
       ref={cardRef}
@@ -161,6 +213,19 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, cl
               data-testid={`button-delete-${link.id}`}
             >
               <Trash2 className="w-4 h-4" />
+            </Button>
+          )}
+
+          {/* Settings button overlay */}
+          {showSettingsButton && (
+            <Button
+              size="icon"
+              variant="secondary"
+              className="absolute top-2 right-12 w-8 h-8 rounded-full opacity-80 hover:opacity-100 bg-white/90 hover:bg-white"
+              onClick={handleSettingsClick}
+              data-testid={`button-settings-${link.id}`}
+            >
+              <Settings className="w-4 h-4" />
             </Button>
           )}
         </div>
@@ -231,6 +296,70 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, cl
           </div>
         </div>
       </div>
+
+      {/* Edit Modal */}
+      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+        <DialogContent className="max-w-md mx-auto">
+          <DialogHeader>
+            <DialogTitle>링크 수정</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-url">URL</Label>
+              <Input
+                id="edit-url"
+                value={editUrl}
+                onChange={(e) => setEditUrl(e.target.value)}
+                placeholder="https://..."
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-title">제목</Label>
+              <Input
+                id="edit-title"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                placeholder="제목을 입력하세요"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-note">참고사항</Label>
+              <Textarea
+                id="edit-note"
+                value={editNote}
+                onChange={(e) => setEditNote(e.target.value)}
+                placeholder="가격 정보나 특별 할인 내용을 입력하세요"
+                className="min-h-[80px]"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-image">커스텀 이미지 URL</Label>
+              <Input
+                id="edit-image"
+                value={editCustomImage}
+                onChange={(e) => setEditCustomImage(e.target.value)}
+                placeholder="/api/images/... 또는 외부 URL"
+              />
+            </div>
+            <div className="flex gap-2 pt-4">
+              <Button 
+                onClick={handleSaveEdit} 
+                disabled={updateLinkMutation.isPending}
+                className="flex-1"
+              >
+                {updateLinkMutation.isPending ? '저장 중...' : '저장'}
+              </Button>
+              <Button 
+                onClick={handleCancelEdit} 
+                variant="outline"
+                className="flex-1"
+              >
+                취소
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </article>
   );
 }

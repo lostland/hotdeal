@@ -202,6 +202,7 @@ export default function Home() {
                   onClick={() => handleLinkClick(link.url)}
                   data-testid={`link-card-${link.id}`}
                   hideDeleteButton={true}
+                  showSettingsButton={isAdmin}
                 />
               ))}
               
