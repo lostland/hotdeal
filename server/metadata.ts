@@ -244,6 +244,57 @@ export async function fetchMetadata(url: string) {
         $('.price_info .sale_price').first().text().trim() ||
         null
       ) : null) ||
+      // 옥션 전용: JavaScript UtsPvalue 객체에서 할인가 추출
+      (finalDomain.includes('auction.co.kr') ? (
+        (() => {
+          // JavaScript에서 UtsPvalue 객체 찾기
+          const scriptContent = $.html();
+          const utsPvalueMatch = scriptContent.match(/var UtsPvalue = \{([^}]+)\}/);
+          if (utsPvalueMatch) {
+            try {
+              // DCPRICE와 ORIGINPRICE 추출
+              const dcpriceMatch = utsPvalueMatch[1].match(/DCPRICE:\s*"([^"]+)"/);
+              const origpriceMatch = utsPvalueMatch[1].match(/ORIGINPRICE:\s*"([^"]+)"/);
+              
+              if (dcpriceMatch && dcpriceMatch[1]) {
+                const dcPrice = dcpriceMatch[1].replace(/,/g, '');
+                if (dcPrice && !isNaN(Number(dcPrice))) {
+                  const formattedPrice = `${Number(dcPrice).toLocaleString()}원`;
+                  console.log(`옥션 JavaScript에서 할인가 추출: DCPRICE=${dcpriceMatch[1]} -> ${formattedPrice}`);
+                  return formattedPrice;
+                }
+              }
+              
+              if (origpriceMatch && origpriceMatch[1]) {
+                const origPrice = origpriceMatch[1].replace(/,/g, '');
+                if (origPrice && !isNaN(Number(origPrice))) {
+                  const formattedPrice = `${Number(origPrice).toLocaleString()}원`;
+                  console.log(`옥션 JavaScript에서 원가 추출: ORIGINPRICE=${origpriceMatch[1]} -> ${formattedPrice}`);
+                  return formattedPrice;
+                }
+              }
+            } catch (e) {
+              console.log('옥션 JavaScript 파싱 실패:', e);
+            }
+          }
+          
+          // 메타태그에서 추출
+          const ogDesc = $('meta[property="og:description"]').attr('content') || '';
+          const desc = $('meta[name="description"]').attr('content') || '';
+          
+          if (ogDesc.match(/^\d{1,3}(,\d{3})*원$/)) {
+            console.log(`옥션 메타태그에서 가격 추출: og:description="${ogDesc}"`);
+            return ogDesc;
+          }
+          
+          if (desc.match(/^\d{1,3}(,\d{3})*원$/)) {
+            console.log(`옥션 메타태그에서 가격 추출: description="${desc}"`);
+            return desc;
+          }
+          
+          return null;
+        })()
+      ) : null) ||
       // G마켓 전용: JSON 데이터에서 할인가 추출
       (finalDomain.includes('gmarket') ? (
         (() => {
