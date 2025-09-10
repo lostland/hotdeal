@@ -488,6 +488,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Sitemap.xml 동적 생성
+  app.get("/sitemap.xml", async (req, res) => {
+    try {
+      const links = await replDBStorage.getAllLinks();
+      const baseUrl = req.get('host') ? `https://${req.get('host')}` : 'https://replit.app';
+      
+      let sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>${baseUrl}/</loc>
+    <lastmod>${new Date().toISOString()}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/admin</loc>
+    <lastmod>${new Date().toISOString()}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.5</priority>
+  </url>`;
+
+      // 각 링크를 sitemap에 추가
+      for (const link of links) {
+        if (link.url && link.url.trim()) {
+          const lastmod = link.createdAt ? new Date(link.createdAt).toISOString() : new Date().toISOString();
+          sitemap += `
+  <url>
+    <loc>${baseUrl}/link/${encodeURIComponent(link.id)}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>`;
+        }
+      }
+
+      sitemap += `
+</urlset>`;
+
+      res.set('Content-Type', 'application/xml');
+      res.send(sitemap);
+    } catch (error) {
+      console.error("Error generating sitemap:", error);
+      res.status(500).send("Error generating sitemap");
+    }
+  });
+
   const httpServer = createServer(app);
   
   // WebSocket 서버 설정
