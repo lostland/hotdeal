@@ -491,7 +491,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Sitemap.xml 동적 생성
   app.get("/sitemap.xml", async (req, res) => {
     try {
-      const links = await replDBStorage.getAllLinks();
       const baseUrl = req.get('host') ? `https://${req.get('host')}` : 'https://replit.app';
       
       let sitemap = `<?xml version="1.0" encoding="UTF-8"?>
@@ -507,23 +506,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
-  </url>`;
-
-      // 각 링크를 sitemap에 추가
-      for (const link of links) {
-        if (link.url && link.url.trim()) {
-          const lastmod = link.createdAt ? new Date(link.createdAt).toISOString() : new Date().toISOString();
-          sitemap += `
+  </url>
   <url>
-    <loc>${baseUrl}/link/${encodeURIComponent(link.id)}</loc>
-    <lastmod>${lastmod}</lastmod>
-    <changefreq>weekly</changefreq>
+    <loc>${baseUrl}/post/how-to-find-real-deals</loc>
+    <lastmod>${new Date().toISOString()}</lastmod>
+    <changefreq>monthly</changefreq>
     <priority>0.8</priority>
-  </url>`;
-        }
-      }
-
-      sitemap += `
+  </url>
+  <url>
+    <loc>${baseUrl}/post/black-friday-guide</loc>
+    <lastmod>${new Date().toISOString()}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/post/credit-card-benefits</loc>
+    <lastmod>${new Date().toISOString()}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/post/travel-hotdeals</loc>
+    <lastmod>${new Date().toISOString()}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
 </urlset>`;
 
       res.set('Content-Type', 'application/xml');
