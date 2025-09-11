@@ -6,11 +6,21 @@ import { AppHeader } from "@/components/app-header";
 import { LinkCard } from "@/components/link-card";
 import { LoadingCard } from "@/components/loading-card";
 import { ErrorCard } from "@/components/error-card";
-import { ExternalLink, Settings, Eye, Share2 } from "lucide-react";
+import { ExternalLink, Settings, Eye, Share2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Home() {
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newUrl, setNewUrl] = useState("");
+  const [newNote, setNewNote] = useState("");
+  const [newCustomImage, setNewCustomImage] = useState("");
+  const { toast } = useToast();
 
   const { data: allLinks = [], isLoading, error, refetch } = useQuery<Link[]>({
     queryKey: ["/api/links"],
@@ -58,6 +68,32 @@ export default function Home() {
   const incrementShareCount = () => {
     shareMutation.mutate();
   };
+
+  // URL 추가 뮤테이션
+  const addUrlMutation = useMutation({
+    mutationFn: async (data: { url: string; note?: string; customImage?: string }) => {
+      const response = await apiRequest("POST", "/api/admin/urls", data);
+      return response.json();
+    },
+    onSuccess: () => {
+      setNewUrl("");
+      setNewNote("");
+      setNewCustomImage("");
+      toast({
+        title: "상품 추가 완료",
+        description: "새로운 상품이 성공적으로 추가되었습니다.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/links"] });
+      setShowAddModal(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "상품 추가 실패",
+        description: error.message || "상품 추가 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
+    },
+  });
 
   // 전역 공유 함수로 컨텍스트에 등록
   useEffect(() => {
@@ -123,6 +159,34 @@ export default function Home() {
     window.open('/admin', '_blank');
   };
 
+  const handleAddClick = () => {
+    setShowAddModal(true);
+  };
+
+  const handleSaveAdd = () => {
+    if (!newUrl.trim()) {
+      toast({
+        title: "오류",
+        description: "URL을 입력해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    addUrlMutation.mutate({
+      url: newUrl.trim(),
+      note: newNote.trim() || undefined,
+      customImage: newCustomImage.trim() || undefined,
+    });
+  };
+
+  const handleCancelAdd = () => {
+    setNewUrl("");
+    setNewNote("");
+    setNewCustomImage("");
+    setShowAddModal(false);
+  };
+
   if (error) {
     return (
       <div className="min-h-screen bg-background">
@@ -182,12 +246,25 @@ export default function Home() {
                     <Button
                       size="icon"
                       variant="ghost"
-                      className="w-10 h-10 rounded-full opacity-30 hover:opacity-60 transition-opacity duration-200 bg-background/80 backdrop-blur-sm border border-border/40"
+                      className="w-10 h-10 rounded-full opacity-30 hover:opacity-60 transition-opacity duration-200 bg-background/80 backdrop-blur-sm border border-border/40 mr-2"
                       onClick={handleAdminClick}
                       data-testid="button-admin-settings"
                     >
                       <Settings className="w-4 h-4 text-muted-foreground" />
                     </Button>
+
+                    {/* 상품 추가 버튼 */}
+                    {isAdmin && (
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="w-10 h-10 rounded-full opacity-30 hover:opacity-60 transition-opacity duration-200 bg-background/80 backdrop-blur-sm border border-border/40"
+                        onClick={handleAddClick}
+                        data-testid="button-add-product"
+                      >
+                        <Plus className="w-4 h-4 text-muted-foreground" />
+                      </Button>
+                    )}
                     
                   </p>
                 </div>
