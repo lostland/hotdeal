@@ -1,31 +1,16 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { AppHeader } from "@/components/app-header";
 import { LinkCard } from "@/components/link-card";
 import { LoadingCard } from "@/components/loading-card";
 import { ErrorCard } from "@/components/error-card";
-import { ExternalLink, Settings, Eye, Share2, Plus } from "lucide-react";
+import { ExternalLink, Settings, Eye, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { ObjectUploader, type ObjectUploaderRef } from "@/components/ObjectUploader";
-import { useToast } from "@/hooks/use-toast";
 
 export default function Home() {
   const [isAdmin, setIsAdmin] = useState(false);
-  
-  // 상품 추가 모달 상태
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [newUrl, setNewUrl] = useState("");
-  const [newNote, setNewNote] = useState("");
-  const [newCustomImage, setNewCustomImage] = useState("");
-  
-  const { toast } = useToast();
-  const newImageUploaderRef = useRef<ObjectUploaderRef>(null);
 
   const { data: allLinks = [], isLoading, error, refetch } = useQuery<Link[]>({
     queryKey: ["/api/links"],
@@ -73,47 +58,6 @@ export default function Home() {
   const incrementShareCount = () => {
     shareMutation.mutate();
   };
-
-  // URL 추가 뮤테이션
-  const addUrlMutation = useMutation({
-    mutationFn: async (data: { url: string; note?: string; customImage?: string }) => {
-      // 드래그 앤 드롭된 파일이 있으면 먼저 업로드
-      const selectedFile = newImageUploaderRef.current?.getSelectedFile();
-      let customImageUrl = data.customImage;
-      
-      if (selectedFile) {
-        const uploadResult = await newImageUploaderRef.current?.uploadSelectedFile();
-        if (uploadResult?.successful?.[0]?.imageUrl) {
-          customImageUrl = uploadResult.successful[0].imageUrl;
-        }
-      }
-      
-      const response = await apiRequest("POST", "/api/admin/urls", {
-        ...data,
-        customImage: customImageUrl
-      });
-      return response.json();
-    },
-    onSuccess: () => {
-      setNewUrl("");
-      setNewNote("");
-      setNewCustomImage("");
-      setShowAddModal(false);
-      newImageUploaderRef.current?.clearSelectedFile();
-      toast({
-        title: "상품 추가 완료",
-        description: "새로운 상품이 성공적으로 추가되었습니다.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/links"] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "상품 추가 실패",
-        description: error.message || "상품 추가 중 오류가 발생했습니다.",
-        variant: "destructive",
-      });
-    },
-  });
 
   // 전역 공유 함수로 컨텍스트에 등록
   useEffect(() => {
@@ -179,16 +123,6 @@ export default function Home() {
     window.open('/admin', '_blank');
   };
 
-  const handleAddProduct = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newUrl) return;
-    addUrlMutation.mutate({ 
-      url: newUrl, 
-      note: newNote.trim() || undefined,
-      customImage: newCustomImage.trim() || undefined
-    });
-  };
-
   if (error) {
     return (
       <div className="min-h-screen bg-background">
@@ -248,25 +182,13 @@ export default function Home() {
                     <Button
                       size="icon"
                       variant="ghost"
-                      className="w-10 h-10 rounded-full opacity-30 hover:opacity-60 transition-opacity duration-200 bg-background/80 backdrop-blur-sm border border-border/40 mr-2"
+                      className="w-10 h-10 rounded-full opacity-30 hover:opacity-60 transition-opacity duration-200 bg-background/80 backdrop-blur-sm border border-border/40"
                       onClick={handleAdminClick}
                       data-testid="button-admin-settings"
                     >
                       <Settings className="w-4 h-4 text-muted-foreground" />
                     </Button>
                     
-                    {/* 상품 추가 버튼 */}
-                    {isAdmin && (
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="w-10 h-10 rounded-full opacity-30 hover:opacity-60 transition-opacity duration-200 bg-background/80 backdrop-blur-sm border border-border/40"
-                        onClick={() => setShowAddModal(true)}
-                        data-testid="button-add-product"
-                      >
-                        <Plus className="w-4 h-4 text-muted-foreground" />
-                      </Button>
-                    )}
                   </p>
                 </div>
               </div>
@@ -499,99 +421,6 @@ export default function Home() {
           
         </div>
       </main>
-
-      {/* 상품 추가 모달 */}
-      <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-        <DialogContent className="max-w-md mx-auto">
-          <DialogHeader>
-            <DialogTitle>상품 추가</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleAddProduct} className="space-y-4">
-            <div>
-              <Label htmlFor="new-url">URL</Label>
-              <Input
-                id="new-url"
-                value={newUrl}
-                onChange={(e) => setNewUrl(e.target.value)}
-                placeholder="https://..."
-                required
-                data-testid="input-new-url"
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="new-note">참고사항</Label>
-              <Textarea
-                id="new-note"
-                value={newNote}
-                onChange={(e) => setNewNote(e.target.value)}
-                placeholder="가격 정보나 특별 할인 내용을 입력하세요"
-                className="min-h-[80px]"
-                data-testid="textarea-new-note"
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="new-image">커스텀 이미지</Label>
-              <div className="space-y-2">
-                <Input
-                  id="new-image"
-                  value={newCustomImage}
-                  onChange={(e) => setNewCustomImage(e.target.value)}
-                  placeholder="이미지 URL을 입력하거나 파일을 업로드하세요"
-                  data-testid="input-new-image"
-                />
-                
-                <ObjectUploader
-                  ref={newImageUploaderRef}
-                  maxNumberOfFiles={1}
-                  maxFileSize={10485760}
-                  showDropZone={true}
-                  onComplete={(result) => {
-                    if (result.successful?.[0]?.imageUrl) {
-                      setNewCustomImage(result.successful[0].imageUrl);
-                    }
-                  }}
-                >
-                  <div className="border border-dashed border-muted-foreground/40 rounded-lg p-4 text-center text-sm text-muted-foreground">
-                    드래그 & 드롭하거나 클릭하여 이미지를 업로드하세요
-                  </div>
-                </ObjectUploader>
-                
-                {newCustomImage && (
-                  <div className="mt-2">
-                    <img
-                      src={newCustomImage}
-                      alt="미리보기"
-                      className="w-20 h-20 object-cover rounded-lg border"
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            <div className="flex gap-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setShowAddModal(false)}
-                className="flex-1"
-                data-testid="button-cancel-add"
-              >
-                취소
-              </Button>
-              <Button
-                type="submit"
-                disabled={addUrlMutation.isPending}
-                className="flex-1"
-                data-testid="button-submit-add"
-              >
-                {addUrlMutation.isPending ? "추가 중..." : "추가"}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
