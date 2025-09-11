@@ -239,14 +239,17 @@ export default function Home() {
                   <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
                     하루 최소 한 번은 꼭 확인해야 하는 특가 소식 🎉  
                   </p>
-                  <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
+                  <p className="text-sm text-slate-700 dark:text-slate-200 leading-relaxed mb-3">
                     <strong>핫딜 레디!</strong>에서 오늘의 새로운 딜을 한눈에 만나보세요!
-
+                  </p>
+                  
+                  {/* 버튼 영역 */}
+                  <div className="flex justify-center items-center gap-2">
                     {/* Admin 버튼 */}
                     <Button
                       size="icon"
                       variant="ghost"
-                      className="w-10 h-10 rounded-full opacity-30 hover:opacity-60 transition-opacity duration-200 bg-background/80 backdrop-blur-sm border border-border/40 mr-2"
+                      className="w-10 h-10 rounded-full opacity-30 hover:opacity-60 transition-opacity duration-200 bg-background/80 backdrop-blur-sm border border-border/40"
                       onClick={handleAdminClick}
                       data-testid="button-admin-settings"
                     >
@@ -265,8 +268,7 @@ export default function Home() {
                         <Plus className="w-4 h-4 text-muted-foreground" />
                       </Button>
                     )}
-                    
-                  </p>
+                  </div>
                 </div>
               </div>
 
