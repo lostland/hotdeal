@@ -499,6 +499,66 @@ export default function Home() {
           
           
         </div>
+        
+        {/* 상품 추가 모달 */}
+        <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+          <DialogContent className="max-w-md mx-auto">
+            <DialogHeader>
+              <DialogTitle>상품 추가</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="new-url">URL *</Label>
+                <Input
+                  id="new-url"
+                  value={newUrl}
+                  onChange={(e) => setNewUrl(e.target.value)}
+                  placeholder="https://..."
+                  data-testid="input-new-url"
+                />
+              </div>
+              <div>
+                <Label htmlFor="new-note">참고사항</Label>
+                <Textarea
+                  id="new-note"
+                  value={newNote}
+                  onChange={(e) => setNewNote(e.target.value)}
+                  placeholder="가격 정보나 특별 할인 내용을 입력하세요"
+                  className="min-h-[80px]"
+                  data-testid="textarea-new-note"
+                />
+              </div>
+              <div>
+                <Label htmlFor="new-image">커스텀 이미지 URL</Label>
+                <Input
+                  id="new-image"
+                  value={newCustomImage}
+                  onChange={(e) => setNewCustomImage(e.target.value)}
+                  placeholder="/api/images/... 또는 외부 URL"
+                  data-testid="input-new-image"
+                />
+              </div>
+              <div className="flex gap-2 pt-4">
+                <Button 
+                  onClick={handleSaveAdd} 
+                  disabled={addUrlMutation.isPending}
+                  className="flex-1"
+                  data-testid="button-save-add"
+                >
+                  {addUrlMutation.isPending ? '추가 중...' : '추가'}
+                </Button>
+                <Button 
+                  onClick={handleCancelAdd} 
+                  variant="outline"
+                  className="flex-1"
+                  data-testid="button-cancel-add"
+                >
+                  취소
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   );
