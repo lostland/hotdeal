@@ -5,7 +5,6 @@ import { cn } from "@/lib/utils";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { KakaoShareButton } from "./kakao-share-button";
 import { useState, useEffect, useRef } from "react";
-import { ConsoleLogWriter } from "drizzle-orm";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,6 +24,7 @@ interface LinkCardProps {
 export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, showSettingsButton = false, className, ...props }: LinkCardProps) {
   const cardRef = useRef<HTMLElement>(null);
   const [isInCenter, setIsInCenter] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editUrl, setEditUrl] = useState(link.url);
   const [editTitle, setEditTitle] = useState(link.title || '');
@@ -35,23 +35,45 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, sh
 
   // Check if note exists (non-empty, trimmed)
   const hasNote = !!link.note?.trim();
+  
+  // Check if link has complete metadata (title, image, domain)
+  const hasCompleteMetadata = !!(
+    link.title?.trim() && 
+    (link.image || link.customImage) && 
+    link.domain?.trim()
+  );
+  
+  // Only fetch price if:
+  // 1. No price exists AND no note exists
+  // 2. Link doesn't have complete metadata (needs parsing)
+  // 3. Card is visible on screen
+  const shouldFetchPrice = (
+    (!link.price && !hasNote) || !hasCompleteMetadata
+  ) && isVisible;
 
-  console.log(`Card -----------------------`);
-  console.log(`${link.id.slice(0, 12)}:`, link);
-  console.log(`Note: "${link.note}"`);
-  console.log(`Price: "${link.price}"`);
-  console.log(`hasNote: "${hasNote}"`);
-
-  // Fetch real-time price if link.price is null and no note exists
+  // Fetch real-time price only when needed and visible
   const { data: priceData, isLoading: priceLoading } = useQuery<{price: string | null; linkId: string}>({
     queryKey: [`/api/price/${link.id}`],
-    enabled: !link.price && !hasNote, // Only fetch if price is null and no note
+    enabled: shouldFetchPrice,
     refetchOnWindowFocus: false,
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
-  // Check if card is in center viewport on scroll
+  // Check if card is visible and in center viewport
   useEffect(() => {
+    if (!cardRef.current) return;
+    
+    // Intersection Observer for visibility
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        setIsVisible(entry.isIntersecting);
+      },
+      { threshold: 0.1 } // Trigger when 10% visible
+    );
+    
+    observer.observe(cardRef.current);
+    
     const checkIfInCenter = () => {
       if (!cardRef.current) return;
       
@@ -64,10 +86,6 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, sh
       const cardCenter = rect.top + rect.height / 2;
       const inCenter = cardCenter >= viewport.centerStart && cardCenter <= viewport.centerEnd;
       
-      // 상태가 바뀔 때만 로그 출력하지만, 항상 상태 업데이트
-      if (inCenter !== isInCenter) {
-        console.log(`Card ${link.id.slice(0, 8)} 중앙 효과:`, inCenter);
-      }
       setIsInCenter(inCenter);
     };
 
@@ -79,6 +97,7 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, sh
     window.addEventListener('resize', checkIfInCenter);
 
     return () => {
+      observer.disconnect();
       window.removeEventListener('scroll', checkIfInCenter);
       window.removeEventListener('resize', checkIfInCenter);
     };
