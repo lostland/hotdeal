@@ -6,6 +6,11 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// HEAD /api 헬스체크 요청 빠른 차단 (외부 봇/모니터링)
+app.head('/api', (req, res) => {
+  res.status(200).end(); // 빈 응답으로 빠르게 처리
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
