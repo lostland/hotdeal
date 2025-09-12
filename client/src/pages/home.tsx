@@ -246,6 +246,7 @@ export default function Home() {
                   {/* 버튼 영역 */}
                   <div className="flex justify-center items-center gap-2">
                     {/* Admin 버튼 */}
+                    
                     <Button
                       size="icon"
                       variant="ghost"
