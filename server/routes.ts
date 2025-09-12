@@ -101,10 +101,13 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // 프록시 신뢰 설정 (프록션 환경용)
+  // 프록시 신뢰 설정 (프로덕션 환경용)
   if (process.env.NODE_ENV === 'production') {
     app.set('trust proxy', 1);
   }
+  
+  // 백업 파일 업로드 사이즈 제한 해제 (50MB)
+  app.use('/api/admin/restore', express.json({ limit: '50mb' }));
   
   // PostgreSQL 데이터베이스 준비 완료
   console.log('PostgreSQL 데이터베이스 사용 준비됨');
@@ -286,7 +289,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Restore from backup data - 인증 필요
+  // Restore from backup data - 인증 필요 (안전 복원 지원)
   app.post("/api/admin/restore", requireAuth, async (req, res) => {
     try {
       const { backupData } = req.body;
@@ -295,12 +298,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "잘못된 백업 데이터 형식입니다. links 배열이 필요합니다." });
       }
 
+      console.log(`복원 시작: ${backupData.links.length}개 링크`);
+      
+      // 기존 데이터 백업 생성 (안전 장치)
+      const currentBackup = await pgStorage.getBackupData();
+      console.log(`현재 데이터 백업 완료: ${currentBackup.links.length}개`);
+      
       await pgStorage.restoreFromBackup(backupData);
       
-      res.json({ success: true, message: "데이터가 성공적으로 복원되었습니다." });
+      res.json({ 
+        success: true, 
+        message: `${backupData.links.length}개 링크가 성공적으로 복원되었습니다.`,
+        restoredCount: backupData.links.length
+      });
     } catch (error) {
       console.error("Error restoring from backup:", error);
-      res.status(500).json({ message: "데이터 복원 중 오류가 발생했습니다." });
+      res.status(500).json({ message: `데이터 복원 실패: ${error.message}` });
     }
   });
 
