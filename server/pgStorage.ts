@@ -335,7 +335,7 @@ export class PgStorage {
         
         const updateData: Partial<InsertLink> = {
           url: newUrl,
-          title: metadata.title,
+          title: title || metadata.title, // 사용자가 설정한 제목 우선
           description: metadata.description,
           image: metadata.image,
           domain: metadata.domain,
