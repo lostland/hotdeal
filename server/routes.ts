@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer } from 'ws';
 import { pgStorage } from "./pgStorage";
@@ -11,7 +11,6 @@ import { db } from "./db";
 import { sql } from "drizzle-orm";
 import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
-import type { Request, Response, NextFunction } from 'express';
 import pg from 'pg';
 const { Pool } = pg;
 
@@ -106,7 +105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.set('trust proxy', 1);
   }
   
-  // 백업 파일 업로드 사이즈 제한 해제 (50MB)
+  // 백업 파일 업로드 사이즈 제한 해제
   app.use('/api/admin/restore', express.json({ limit: '50mb' }));
   
   // PostgreSQL 데이터베이스 준비 완료
@@ -313,7 +312,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error restoring from backup:", error);
-      res.status(500).json({ message: `데이터 복원 실패: ${error.message}` });
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
+      res.status(500).json({ message: `데이터 복원 실패: ${errorMessage}` });
     }
   });
 

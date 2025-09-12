@@ -427,9 +427,10 @@ export class PgStorage {
       // 기존 데이터 삭제
       await db.delete(links);
       
-      // 백업 데이터 복원
+      // 백업 데이터 복원 (원본 시간 보존)
       for (const link of backupData.links) {
         const linkToInsert = {
+          id: link.id, // 원본 ID 보존
           url: link.url,
           title: link.title || '',
           description: link.description || '',
@@ -437,7 +438,8 @@ export class PgStorage {
           customImage: link.customImage || null,
           domain: link.domain || '',
           price: link.price || '',
-          note: link.note || ''
+          note: link.note || '',
+          createdAt: link.createdAt // 원본 생성시간 보존
         };
         await db.insert(links).values(linkToInsert);
       }
