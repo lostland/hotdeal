@@ -296,6 +296,158 @@ export class PgStorage {
       return null;
     }
   }
+
+  // URL 목록 가져오기 (관리자용)
+  async getUrls(): Promise<string[]> {
+    try {
+      const result = await db.select({ url: links.url }).from(links);
+      return result.map(row => row.url);
+    } catch (error) {
+      console.error('Failed to get URLs from PostgreSQL:', error);
+      return [];
+    }
+  }
+
+  // Routes.ts 호환 메서드들 (URL 기반 인터페이스)
+  async addUrl(url: string, note?: string, customImage?: string): Promise<Link> {
+    const linkData: InsertLink = {
+      url,
+      note: note || '',
+      customImage: customImage || null,
+      title: '',
+      description: '',
+      image: '',
+      domain: '',
+      price: ''
+    };
+    return await this.addLink(linkData);
+  }
+
+  async updateUrl(oldUrl: string, newUrl: string, title?: string, note?: string, customImage?: string): Promise<Link | null> {
+    try {
+      const [existingLink] = await db.select().from(links).where(eq(links.url, oldUrl)).limit(1);
+      if (!existingLink) return null;
+      
+      const updateData: Partial<InsertLink> = { url: newUrl };
+      if (title !== undefined) updateData.title = title;
+      if (note !== undefined) updateData.note = note;
+      if (customImage !== undefined) updateData.customImage = customImage;
+      
+      return await this.updateLink(existingLink.id, updateData);
+    } catch (error) {
+      console.error('URL 업데이트 실패:', error);
+      return null;
+    }
+  }
+
+  async removeUrl(url: string): Promise<boolean> {
+    try {
+      const [existingLink] = await db.select().from(links).where(eq(links.url, url)).limit(1);
+      if (!existingLink) return false;
+      
+      return await this.deleteLink(existingLink.id);
+    } catch (error) {
+      console.error('URL 삭제 실패:', error);
+      return false;
+    }
+  }
+
+  async updateLinkMetadata(linkId: string, metadata: any): Promise<boolean> {
+    try {
+      const updateData: Partial<InsertLink> = {};
+      if (metadata.title) updateData.title = metadata.title;
+      if (metadata.description) updateData.description = metadata.description;
+      if (metadata.image) updateData.image = metadata.image;
+      if (metadata.domain) updateData.domain = metadata.domain;
+      if (metadata.price) updateData.price = metadata.price;
+      
+      const result = await this.updateLink(linkId, updateData);
+      return !!result;
+    } catch (error) {
+      console.error('링크 메타데이터 업데이트 실패:', error);
+      return false;
+    }
+  }
+
+  // 관리자 인증 메서드들
+  async verifyAdmin(username: string, password: string): Promise<boolean> {
+    try {
+      const [user] = await db.select().from(users).where(eq(users.username, username)).limit(1);
+      if (!user) return false;
+      
+      return await bcrypt.compare(password, user.password);
+    } catch (error) {
+      console.error('관리자 인증 실패:', error);
+      return false;
+    }
+  }
+
+  async changeAdminPassword(username: string, oldPassword: string, newPassword: string): Promise<boolean> {
+    try {
+      // 기존 비밀번호 확인
+      const isValid = await this.verifyAdmin(username, oldPassword);
+      if (!isValid) return false;
+      
+      // 새 비밀번호 해시화
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      
+      const result = await db
+        .update(users)
+        .set({ password: hashedPassword })
+        .where(eq(users.username, username));
+        
+      return result.rowCount !== null && result.rowCount > 0;
+    } catch (error) {
+      console.error('비밀번호 변경 실패:', error);
+      return false;
+    }
+  }
+
+  // 백업/복원 메서드들
+  async getBackupData(): Promise<any> {
+    try {
+      const allLinks = await this.getAllLinks();
+      const urls = allLinks.map(link => link.url);
+      return {
+        links: allLinks,
+        urls: urls
+      };
+    } catch (error) {
+      console.error('백업 데이터 조회 실패:', error);
+      throw error;
+    }
+  }
+
+  async restoreFromBackup(backupData: any): Promise<void> {
+    try {
+      if (!backupData || !backupData.links) {
+        throw new Error('유효하지 않은 백업 데이터');
+      }
+      
+      // 기존 데이터 삭제
+      await db.delete(links);
+      
+      // 백업 데이터 복원
+      for (const link of backupData.links) {
+        const linkToInsert = {
+          url: link.url,
+          title: link.title || '',
+          description: link.description || '',
+          image: link.image || '',
+          customImage: link.customImage || null,
+          domain: link.domain || '',
+          price: link.price || '',
+          note: link.note || ''
+        };
+        await db.insert(links).values(linkToInsert);
+      }
+      
+      console.log(`백업 복원 완료: ${backupData.links.length}개 링크`);
+    } catch (error) {
+      console.error('백업 복원 실패:', error);
+      throw error;
+    }
+  }
 }
 
 export const pgStorage = new PgStorage();

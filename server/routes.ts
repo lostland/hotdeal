@@ -2,7 +2,6 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer } from 'ws';
 import { pgStorage } from "./pgStorage";
-import { migrateToPg } from "./migrateToPg";
 import { insertLinkSchema, statistics } from "@shared/schema";
 import { fetchMetadata } from "./metadata";
 import multer from 'multer';
@@ -10,6 +9,10 @@ import path from 'path';
 import { randomUUID } from 'crypto';
 import { db } from "./db";
 import { sql } from "drizzle-orm";
+import session from 'express-session';
+import connectPgSimple from 'connect-pg-simple';
+import type { Request, Response, NextFunction } from 'express';
+import { Pool } from 'pg';
 
 let wss: WebSocketServer;
 
@@ -80,13 +83,60 @@ const upload = multer({
   }
 });
 
-export async function registerRoutes(app: Express): Promise<Server> {
-  // 서버 시작 시 데이터 마이그레이션 실행
-  try {
-    await migrateToPg();
-  } catch (error) {
-    console.error('마이그레이션 실패 (계속 진행):', error);
+// 세션 확장을 위한 타입 정의
+declare module 'express-session' {
+  interface SessionData {
+    isAuthenticated?: boolean;
+    username?: string;
   }
+}
+
+// 관리자 인증 확인 미들웨어
+function requireAuth(req: Request, res: Response, next: NextFunction) {
+  if (!req.session.isAuthenticated) {
+    return res.status(401).json({ message: "로그인이 필요합니다." });
+  }
+  next();
+}
+
+export async function registerRoutes(app: Express): Promise<Server> {
+  // 프록시 신뢰 설정 (프록션 환경용)
+  if (process.env.NODE_ENV === 'production') {
+    app.set('trust proxy', 1);
+  }
+  
+  // PostgreSQL 데이터베이스 준비 완료
+  console.log('PostgreSQL 데이터베이스 사용 준비됨');
+  
+  // PostgreSQL 기반 세션 스토어 설정
+  if (!process.env.SESSION_SECRET) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('프록션 환경에서 SESSION_SECRET 환경변수는 필수입니다!');
+    }
+    console.warn('⚠️  개발 환경: SESSION_SECRET 환경변수를 설정하세요!');
+  }
+  
+  const PgSession = connectPgSimple(session);
+  const pgPool = new Pool({
+    connectionString: process.env.DATABASE_URL
+  });
+  
+  app.use(session({
+    store: new PgSession({
+      pool: pgPool,
+      tableName: 'session',
+      createTableIfMissing: true
+    }),
+    secret: process.env.SESSION_SECRET || 'temp-dev-secret-' + Math.random().toString(36),
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: 1000 * 60 * 60 * 8 // 8시간
+    }
+  }));
   // Get all links
   app.get("/api/links", async (req, res) => {
     try {
@@ -98,8 +148,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // 메타데이터 새로고침 API
-  app.post("/api/admin/refresh-metadata/:linkId", async (req, res) => {
+  // 메타데이터 새로고침 API - 인증 필요
+  app.post("/api/admin/refresh-metadata/:linkId", requireAuth, async (req, res) => {
     try {
       const { linkId } = req.params;
       
@@ -160,7 +210,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isValid = await pgStorage.verifyAdmin(username, password);
       
       if (isValid) {
-        res.json({ success: true, message: "Login successful", username });
+        // 세션 Fixation 공격 방지를 위해 세션 ID 재생성
+        req.session.regenerate((err) => {
+          if (err) {
+            console.error('세션 재생성 실패:', err);
+            return res.status(500).json({ message: "로그인 실패" });
+          }
+          
+          // 세션에 인증 정보 저장
+          req.session.isAuthenticated = true;
+          req.session.username = username;
+          res.json({ success: true, message: "Login successful", username });
+        });
       } else {
         res.status(401).json({ success: false, message: "Invalid credentials" });
       }
@@ -170,8 +231,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Change admin password
-  app.post("/api/admin/change-password", async (req, res) => {
+  // 로그아웃 API
+  app.post("/api/admin/logout", (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ message: "로그아웃 실패" });
+      }
+      res.json({ success: true, message: "로그아웃 성공" });
+    });
+  });
+
+  // Change admin password (인증 필요)
+  app.post("/api/admin/change-password", requireAuth, async (req, res) => {
     try {
       const { username, oldPassword, newPassword } = req.body;
       
@@ -183,6 +254,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "새 비밀번호는 4자 이상이어야 합니다." });
       }
 
+      // 로그인된 사용자와 요청하는 사용자가 일치하는지 확인
+      if (req.session.username !== username) {
+        return res.status(403).json({ message: "자신의 비밀번호만 변경 가능합니다." });
+      }
+      
       const success = await pgStorage.changeAdminPassword(username, oldPassword, newPassword);
       
       if (success) {
@@ -196,8 +272,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Download backup data
-  app.get("/api/admin/backup", async (req, res) => {
+  // Download backup data - 인증 필요 (POST로 변경하여 CSRF 방지)
+  app.post("/api/admin/backup", requireAuth, async (req, res) => {
     try {
       const backupData = await pgStorage.getBackupData();
       res.setHeader('Content-Type', 'application/json');
@@ -209,8 +285,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Restore from backup data
-  app.post("/api/admin/restore", async (req, res) => {
+  // Restore from backup data - 인증 필요
+  app.post("/api/admin/restore", requireAuth, async (req, res) => {
     try {
       const { backupData } = req.body;
       
@@ -227,8 +303,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get URLs (admin only)
-  app.get("/api/admin/urls", async (req, res) => {
+  // Get URLs (admin only) - 인증 필요
+  app.get("/api/admin/urls", requireAuth, async (req, res) => {
     try {
       const urls = await pgStorage.getUrls();
       res.json(urls);
@@ -263,8 +339,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ReplDB 이미지 업로드 엔드포인트
-  app.post("/api/images/upload", upload.single('image'), async (req, res) => {
+  // ReplDB 이미지 업로드 엔드포인트 - 인증 필요
+  app.post("/api/images/upload", requireAuth, upload.single('image'), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "이미지 파일이 필요합니다." });
@@ -288,8 +364,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Add URL (admin only)
-  app.post("/api/admin/urls", async (req, res) => {
+  // Add URL (admin only) - 인증 필요
+  app.post("/api/admin/urls", requireAuth, async (req, res) => {
     try {
       const { url, note, customImage } = req.body;
       
@@ -322,14 +398,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update URL (admin only)
-  app.put("/api/admin/urls", async (req, res) => {
+  // Update URL (admin only) - 인증 필요
+  app.put("/api/admin/urls", requireAuth, async (req, res) => {
     try {
       const { oldUrl, newUrl, title, note, customImage } = req.body;
       
-      //if (oldUrl === undefined || oldUrl === null || newUrl === undefined || newUrl === null) 
-      if (newUrl === undefined || newUrl === null) 
-      {
+      // oldUrl과 newUrl 모두 필수 검증
+      if (!oldUrl || !newUrl) {
         return res.status(400).json({ message: "Old URL and new URL are required" });
       }
 
@@ -338,18 +413,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const updatedLink = await pgStorage.updateUrl(oldUrl, newUrl, title, note, normalizedImage);
       
+      // 업데이트 실패 처리
+      if (!updatedLink) {
+        return res.status(404).json({ message: "Original URL not found" });
+      }
+      
       // URL이 변경된 경우 메타데이터 자동 새로고침
-      //if (oldUrl !== newUrl) 
-      {
+      if (oldUrl !== newUrl) {
         try {
           console.log(`URL 변경 감지: ${oldUrl} -> ${newUrl}, 메타데이터 새로고침 시작`);
           const metadata = await fetchMetadata(newUrl);
           if (metadata && updatedLink.id) {
             await pgStorage.updateLinkMetadata(updatedLink.id, metadata);
-            console.log(`메타데이터 자동 새로고침 완료: ${updatedLink.id}`);
+            console.log(`메타데이터 자동 새로고침 완룈: ${updatedLink.id}`);
           }
         } catch (metaError) {
-          console.log(`메타데이터 자동 새로고침 실패: ${metaError}`);
+          console.log(`메타데이터 자동 새로고츨 실패: ${metaError}`);
           // 메타데이터 실패는 무시하고 계속 진행
         }
       }
@@ -380,8 +459,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Remove URL (admin only)
-  app.delete("/api/admin/urls", async (req, res) => {
+  // Remove URL (admin only) - 인증 필요
+  app.delete("/api/admin/urls", requireAuth, async (req, res) => {
     try {
       const { url } = req.body;
       
