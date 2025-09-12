@@ -12,7 +12,8 @@ import { sql } from "drizzle-orm";
 import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
 import type { Request, Response, NextFunction } from 'express';
-import { Pool } from 'pg';
+import pg from 'pg';
+const { Pool } = pg;
 
 let wss: WebSocketServer;
 
