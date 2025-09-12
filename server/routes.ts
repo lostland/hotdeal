@@ -273,8 +273,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Download backup data - 인증 필요 (POST로 변경하여 CSRF 방지)
-  app.post("/api/admin/backup", requireAuth, async (req, res) => {
+  // Download backup data - 인증 필요 (GET 방식으로 복원 - 파일 다운로드용)
+  app.get("/api/admin/backup", requireAuth, async (req, res) => {
     try {
       const backupData = await pgStorage.getBackupData();
       res.setHeader('Content-Type', 'application/json');
@@ -291,8 +291,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { backupData } = req.body;
       
-      if (!backupData || !backupData.urls || !backupData.links) {
-        return res.status(400).json({ message: "잘못된 백업 데이터 형식입니다." });
+      if (!backupData || !backupData.links || !Array.isArray(backupData.links)) {
+        return res.status(400).json({ message: "잘못된 백업 데이터 형식입니다. links 배열이 필요합니다." });
       }
 
       await pgStorage.restoreFromBackup(backupData);
