@@ -1,7 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { WebSocketServer } from 'ws';
-import { replDBStorage } from "./replDBStorage";
+import { pgStorage } from "./pgStorage";
+import { migrateToPg } from "./migrateToPg";
 import { insertLinkSchema, statistics } from "@shared/schema";
 import { fetchMetadata } from "./metadata";
 import multer from 'multer';
@@ -80,10 +81,16 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // 서버 시작 시 데이터 마이그레이션 실행
+  try {
+    await migrateToPg();
+  } catch (error) {
+    console.error('마이그레이션 실패 (계속 진행):', error);
+  }
   // Get all links
   app.get("/api/links", async (req, res) => {
     try {
-      const links = await replDBStorage.getAllLinks();
+      const links = await pgStorage.getAllLinks();
       res.json(links);
     } catch (error) {
       console.error("Error fetching links:", error);
@@ -96,7 +103,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { linkId } = req.params;
       
-      const links = await replDBStorage.getAllLinks();
+      const links = await pgStorage.getAllLinks();
       const link = links.find(l => l.id === linkId);
       
       if (!link) {
@@ -107,7 +114,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const metadata = await queueMetadataRequest(link.url);
       
       // 링크 업데이트
-      await replDBStorage.updateLinkMetadata(linkId, metadata);
+      await pgStorage.updateLinkMetadata(linkId, metadata);
       
       res.json({ success: true, metadata });
     } catch (error) {
@@ -121,7 +128,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { linkId } = req.params;
       
-      const links = await replDBStorage.getAllLinks();
+      const links = await pgStorage.getAllLinks();
       const link = links.find(l => l.id === linkId);
       
       if (!link) {
@@ -150,7 +157,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Username and password required" });
       }
 
-      const isValid = await replDBStorage.verifyAdmin(username, password);
+      const isValid = await pgStorage.verifyAdmin(username, password);
       
       if (isValid) {
         res.json({ success: true, message: "Login successful", username });
@@ -176,7 +183,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "새 비밀번호는 4자 이상이어야 합니다." });
       }
 
-      const success = await replDBStorage.changeAdminPassword(username, oldPassword, newPassword);
+      const success = await pgStorage.changeAdminPassword(username, oldPassword, newPassword);
       
       if (success) {
         res.json({ success: true, message: "비밀번호가 성공적으로 변경되었습니다." });
@@ -192,7 +199,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Download backup data
   app.get("/api/admin/backup", async (req, res) => {
     try {
-      const backupData = await replDBStorage.getBackupData();
+      const backupData = await pgStorage.getBackupData();
       res.setHeader('Content-Type', 'application/json');
       res.setHeader('Content-Disposition', `attachment; filename="links-backup-${new Date().toISOString().split('T')[0]}.json"`);
       res.json(backupData);
@@ -211,7 +218,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "잘못된 백업 데이터 형식입니다." });
       }
 
-      await replDBStorage.restoreFromBackup(backupData);
+      await pgStorage.restoreFromBackup(backupData);
       
       res.json({ success: true, message: "데이터가 성공적으로 복원되었습니다." });
     } catch (error) {
@@ -223,7 +230,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get URLs (admin only)
   app.get("/api/admin/urls", async (req, res) => {
     try {
-      const urls = await replDBStorage.getUrls();
+      const urls = await pgStorage.getUrls();
       res.json(urls);
     } catch (error) {
       console.error("Error fetching URLs:", error);
@@ -235,7 +242,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/images/:filename", async (req, res) => {
     try {
       const filename = req.params.filename;
-      const imageBuffer = await replDBStorage.getImage(filename);
+      const imageBuffer = await pgStorage.getImage(filename);
       
       if (!imageBuffer) {
         return res.status(404).json({ message: "Image not found" });
@@ -268,7 +275,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const filename = `${randomUUID()}${ext}`;
       
       // ReplDB에 이미지 저장
-      const imageUrl = await replDBStorage.saveImage(req.file.buffer, filename);
+      const imageUrl = await pgStorage.saveImage(req.file.buffer, filename);
       
       res.json({ 
         success: true,
@@ -293,7 +300,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 이미지 URL이 있으면 그대로 사용 (로컬 파일 경로)
       let normalizedImage = customImage;
 
-      const newLink = await replDBStorage.addUrl(url, note, normalizedImage);
+      const newLink = await pgStorage.addUrl(url, note, normalizedImage);
       
       // WebSocket으로 실시간 업데이트 브로드캐스트
       if (wss) {
@@ -329,7 +336,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 이미지 URL이 있으면 그대로 사용 (로컬 파일 경로)
       let normalizedImage = customImage;
 
-      const updatedLink = await replDBStorage.updateUrl(oldUrl, newUrl, title, note, normalizedImage);
+      const updatedLink = await pgStorage.updateUrl(oldUrl, newUrl, title, note, normalizedImage);
       
       // URL이 변경된 경우 메타데이터 자동 새로고침
       //if (oldUrl !== newUrl) 
@@ -338,7 +345,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`URL 변경 감지: ${oldUrl} -> ${newUrl}, 메타데이터 새로고침 시작`);
           const metadata = await fetchMetadata(newUrl);
           if (metadata && updatedLink.id) {
-            await replDBStorage.updateLinkMetadata(updatedLink.id, metadata);
+            await pgStorage.updateLinkMetadata(updatedLink.id, metadata);
             console.log(`메타데이터 자동 새로고침 완료: ${updatedLink.id}`);
           }
         } catch (metaError) {
@@ -382,7 +389,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "URL is required" });
       }
 
-      const removed = await replDBStorage.removeUrl(url);
+      const removed = await pgStorage.removeUrl(url);
       
       if (!removed) {
         return res.status(404).json({ message: "URL not found" });
