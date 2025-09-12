@@ -376,15 +376,22 @@ export default function Admin() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && file.type === "application/json") {
-      setRestoreFile(file);
-    } else {
-      toast({
-        title: "파일 형식 오류",
-        description: "JSON 파일만 선택할 수 있습니다.",
-        variant: "destructive",
-      });
-      e.target.value = "";
+    if (file) {
+      // 파일 확장자와 MIME 타입 모두 확인 (브라우저 호환성)
+      const isJsonFile = file.type === "application/json" || 
+                       file.type === "text/json" || 
+                       file.name.toLowerCase().endsWith('.json');
+      
+      if (isJsonFile) {
+        setRestoreFile(file);
+      } else {
+        toast({
+          title: "파일 형식 오류",
+          description: "JSON 파일(.json)만 선택할 수 있습니다.",
+          variant: "destructive",
+        });
+        e.target.value = "";
+      }
     }
   };
 
