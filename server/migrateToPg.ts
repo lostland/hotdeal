@@ -22,11 +22,22 @@ async function migrateToPg() {
       const existingLinks = await pgStorage.getAllLinks();
       console.log(`📊 PostgreSQL에 기존 링크: ${existingLinks.length}개`);
       
-      if (existingLinks.length === 0 && linksData.links.length > 0) {
-        console.log('🔄 링크 데이터 마이그레이션 시작...');
+      // 완전 마이그레이션: ReplDB 개수가 더 많으면 계속 진행
+      if (linksData.links.length > existingLinks.length) {
+        console.log(`🔄 링크 데이터 마이그레이션 시작... (ReplDB: ${linksData.links.length}개, PostgreSQL: ${existingLinks.length}개)`);
+        
+        let migrated = 0;
+        let skipped = 0;
         
         for (const link of linksData.links) {
           try {
+            // URL 기준으로 중복 확인
+            const exists = await pgStorage.isDuplicateUrl(link.url);
+            if (exists) {
+              skipped++;
+              continue;
+            }
+            
             // ReplDB 형식을 PostgreSQL 형식으로 변환
             const linkToMigrate = {
               url: link.url,
@@ -40,15 +51,19 @@ async function migrateToPg() {
             };
             
             await pgStorage.addLink(linkToMigrate);
-            console.log(`✅ 링크 마이그레이션 완료: ${link.title || link.url}`);
+            migrated++;
+            console.log(`✅ [${migrated}/${linksData.links.length}] 마이그레이션: ${link.title || link.url}`);
+            
+            // Rate limiting 방지 (100ms 대기)
+            await new Promise(resolve => setTimeout(resolve, 100));
           } catch (error) {
             console.error(`❌ 링크 마이그레이션 실패: ${link.url}`, error);
           }
         }
         
-        console.log('🎉 모든 링크 데이터 마이그레이션 완료!');
-      } else if (existingLinks.length > 0) {
-        console.log('⚠️  PostgreSQL에 이미 데이터가 존재함. 마이그레이션 건너뜀.');
+        console.log(`🎉 마이그레이션 완료! 신규: ${migrated}개, 중복 건너뜀: ${skipped}개`);
+      } else if (existingLinks.length >= linksData.links.length) {
+        console.log(`✅ PostgreSQL에 충분한 데이터 존재 (${existingLinks.length}개 >= ${linksData.links.length}개)`);
       } else {
         console.log('ℹ️  마이그레이션할 링크 데이터가 없음');
       }
