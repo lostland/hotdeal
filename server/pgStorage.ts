@@ -328,12 +328,52 @@ export class PgStorage {
       const [existingLink] = await db.select().from(links).where(eq(links.url, oldUrl)).limit(1);
       if (!existingLink) return null;
       
-      const updateData: Partial<InsertLink> = { url: newUrl };
-      if (title !== undefined) updateData.title = title;
-      if (note !== undefined) updateData.note = note;
-      if (customImage !== undefined) updateData.customImage = customImage;
-      
-      return await this.updateLink(existingLink.id, updateData);
+      // URL이 바뀐 경우 메타데이터 다시 파싱
+      if (oldUrl !== newUrl) {
+        try {
+          const { fetchMetadata } = await import('./metadata');
+          const metadata = await fetchMetadata(newUrl);
+          
+          const updateData: Partial<InsertLink> = {
+            url: newUrl,
+            title: metadata.title,
+            description: metadata.description,
+            image: metadata.image,
+            domain: metadata.domain,
+            price: metadata.price,
+            customImage: customImage || null,
+            note: note || ''
+          };
+          
+          return await this.updateLink(existingLink.id, updateData);
+        } catch (error) {
+          console.error(`Failed to fetch metadata for ${newUrl}:`, error);
+          // 메타데이터 파싱 실패시 기본 데이터로 업데이트
+          const urlObj = new URL(newUrl);
+          const domain = urlObj.hostname;
+          
+          const updateData: Partial<InsertLink> = {
+            url: newUrl,
+            title: title || domain,
+            description: '',
+            image: '',
+            domain: domain,
+            price: '',
+            customImage: customImage || null,
+            note: note || ''
+          };
+          
+          return await this.updateLink(existingLink.id, updateData);
+        }
+      } else {
+        // URL이 같으면 note와 customImage만 업데이트
+        const updateData: Partial<InsertLink> = {};
+        if (title !== undefined) updateData.title = title;
+        if (note !== undefined) updateData.note = note;
+        if (customImage !== undefined) updateData.customImage = customImage;
+        
+        return await this.updateLink(existingLink.id, updateData);
+      }
     } catch (error) {
       console.error('URL 업데이트 실패:', error);
       return null;
