@@ -29,6 +29,13 @@ export const statistics = pgTable("statistics", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const images = pgTable("images", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  filename: text("filename").notNull().unique(),
+  buffer: text("buffer").notNull(), // base64 encoded
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -50,9 +57,16 @@ export const insertStatisticsSchema = createInsertSchema(statistics).pick({
   shareCount: true,
 });
 
+export const insertImageSchema = createInsertSchema(images).pick({
+  filename: true,
+  buffer: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertLink = z.infer<typeof insertLinkSchema>;
 export type Link = typeof links.$inferSelect;
 export type InsertStatistics = z.infer<typeof insertStatisticsSchema>;
 export type Statistics = typeof statistics.$inferSelect;
+export type InsertImage = z.infer<typeof insertImageSchema>;
+export type Image = typeof images.$inferSelect;

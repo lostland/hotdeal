@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { links, users, statistics, type Link, type InsertLink, type User, type InsertUser, type Statistics, type InsertStatistics } from "@shared/schema";
+import { links, users, statistics, images, type Link, type InsertLink, type User, type InsertUser, type Statistics, type InsertStatistics, type Image, type InsertImage } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { fetchMetadata } from "./metadata";
@@ -46,20 +46,21 @@ export class PgStorage {
     try {
       const existingUsers = await db.select().from(users).limit(1);
       if (existingUsers.length === 0) {
-        // 기본 관리자 계정들 생성
-        const defaultAdmins = [
-          { username: 'admin', password: 'semicom11' },
-          { username: 'ready', password: 'ready123' }
-        ];
-
-        for (const admin of defaultAdmins) {
-          const hashedPassword = await bcrypt.hash(admin.password, 10);
+        // 환경변수에서 관리자 계정 정보 확인
+        const adminUsername = process.env.ADMIN_USERNAME;
+        const adminPassword = process.env.ADMIN_PASSWORD;
+        
+        if (adminUsername && adminPassword) {
+          const hashedPassword = await bcrypt.hash(adminPassword, 10);
           await db.insert(users).values({
-            username: admin.username,
+            username: adminUsername,
             password: hashedPassword
           });
+          console.log('관리자 계정 생성 완료:', adminUsername);
+        } else {
+          console.log('⚠️  관리자 계정을 생성하려면 ADMIN_USERNAME과 ADMIN_PASSWORD 환경변수를 설정하세요.');
+          console.log('   예: ADMIN_USERNAME=admin ADMIN_PASSWORD=your_secure_password');
         }
-        console.log('기본 관리자 계정 생성 완료');
       }
     } catch (error) {
       console.error('관리자 계정 초기화 실패:', error);
@@ -264,6 +265,35 @@ export class PgStorage {
     } catch (error) {
       console.error('PostgreSQL 마이그레이션 실패:', error);
       throw error;
+    }
+  }
+
+  // 이미지 저장 (PostgreSQL에 base64로 저장)
+  async saveImage(buffer: Buffer, filename: string): Promise<string> {
+    try {
+      const base64Data = buffer.toString('base64');
+      await db.insert(images).values({
+        filename,
+        buffer: base64Data,
+      });
+      return `/api/images/${filename}`;
+    } catch (error) {
+      console.error('Failed to save image to PostgreSQL:', error);
+      throw error;
+    }
+  }
+
+  // 이미지 불러오기
+  async getImage(filename: string): Promise<Buffer | null> {
+    try {
+      const result = await db.select().from(images).where(eq(images.filename, filename)).limit(1);
+      if (result.length === 0) return null;
+      
+      const base64Data = result[0].buffer;
+      return Buffer.from(base64Data, 'base64');
+    } catch (error) {
+      console.error('Failed to get image from PostgreSQL:', error);
+      return null;
     }
   }
 }
