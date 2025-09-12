@@ -328,27 +328,27 @@ export class PgStorage {
       const [existingLink] = await db.select().from(links).where(eq(links.url, oldUrl)).limit(1);
       if (!existingLink) return null;
       
-      // URL이 바뀐 경우 메타데이터 다시 파싱
-      if (oldUrl !== newUrl) {
+      // 저장 버튼 누를 때마다 항상 메타데이터 다시 파싱
+      try {
+        const { fetchMetadata } = await import('./metadata');
+        const metadata = await fetchMetadata(newUrl);
+        
+        const updateData: Partial<InsertLink> = {
+          url: newUrl,
+          title: metadata.title,
+          description: metadata.description,
+          image: metadata.image,
+          domain: metadata.domain,
+          price: metadata.price,
+          customImage: customImage || null,
+          note: note || ''
+        };
+        
+        return await this.updateLink(existingLink.id, updateData);
+      } catch (error) {
+        console.error(`Failed to fetch metadata for ${newUrl}:`, error);
+        // 메타데이터 파싱 실패시 기본 데이터로 업데이트
         try {
-          const { fetchMetadata } = await import('./metadata');
-          const metadata = await fetchMetadata(newUrl);
-          
-          const updateData: Partial<InsertLink> = {
-            url: newUrl,
-            title: metadata.title,
-            description: metadata.description,
-            image: metadata.image,
-            domain: metadata.domain,
-            price: metadata.price,
-            customImage: customImage || null,
-            note: note || ''
-          };
-          
-          return await this.updateLink(existingLink.id, updateData);
-        } catch (error) {
-          console.error(`Failed to fetch metadata for ${newUrl}:`, error);
-          // 메타데이터 파싱 실패시 기본 데이터로 업데이트
           const urlObj = new URL(newUrl);
           const domain = urlObj.hostname;
           
@@ -364,15 +364,21 @@ export class PgStorage {
           };
           
           return await this.updateLink(existingLink.id, updateData);
+        } catch (urlError) {
+          // URL 파싱도 실패시 기본값으로 업데이트
+          const updateData: Partial<InsertLink> = {
+            url: newUrl,
+            title: title || '제목 없음',
+            description: '',
+            image: '',
+            domain: '',
+            price: '',
+            customImage: customImage || null,
+            note: note || ''
+          };
+          
+          return await this.updateLink(existingLink.id, updateData);
         }
-      } else {
-        // URL이 같으면 note와 customImage만 업데이트
-        const updateData: Partial<InsertLink> = {};
-        if (title !== undefined) updateData.title = title;
-        if (note !== undefined) updateData.note = note;
-        if (customImage !== undefined) updateData.customImage = customImage;
-        
-        return await this.updateLink(existingLink.id, updateData);
       }
     } catch (error) {
       console.error('URL 업데이트 실패:', error);
