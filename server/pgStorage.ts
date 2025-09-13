@@ -347,38 +347,23 @@ export class PgStorage {
         return await this.updateLink(existingLink.id, updateData);
       } catch (error) {
         console.error(`Failed to fetch metadata for ${newUrl}:`, error);
-        // 메타데이터 파싱 실패시 기본 데이터로 업데이트
-        try {
-          const urlObj = new URL(newUrl);
-          const domain = urlObj.hostname;
-          
-          const updateData: Partial<InsertLink> = {
-            url: newUrl,
-            title: title || domain,
-            description: '',
-            image: '',
-            domain: domain,
-            price: '',
-            customImage: customImage || null,
-            note: note || ''
-          };
-          
-          return await this.updateLink(existingLink.id, updateData);
-        } catch (urlError) {
-          // URL 파싱도 실패시 기본값으로 업데이트
-          const updateData: Partial<InsertLink> = {
-            url: newUrl,
-            title: title || '제목 없음',
-            description: '',
-            image: '',
-            domain: '',
-            price: '',
-            customImage: customImage || null,
-            note: note || ''
-          };
-          
-          return await this.updateLink(existingLink.id, updateData);
+        // 메타데이터 파싱 실패시 사용자 입력만 업데이트하고 기존 데이터 보존
+        const updateData: Partial<InsertLink> = {
+          url: newUrl,
+          customImage: customImage || null
+        };
+        
+        // 사용자가 제목을 입력했으면 업데이트
+        if (title) {
+          updateData.title = title;
         }
+        
+        // 사용자가 노트를 입력했으면 업데이트  
+        if (note !== undefined) {
+          updateData.note = note;
+        }
+        
+        return await this.updateLink(existingLink.id, updateData);
       }
     } catch (error) {
       console.error('URL 업데이트 실패:', error);
