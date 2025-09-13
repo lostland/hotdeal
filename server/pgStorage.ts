@@ -341,7 +341,7 @@ export class PgStorage {
           domain: metadata.domain,
           price: metadata.price,
           customImage: customImage || null,
-          note: note || ''
+          note: note !== undefined ? note : ''
         };
         
         return await this.updateLink(existingLink.id, updateData);
