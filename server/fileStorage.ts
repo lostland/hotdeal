@@ -39,7 +39,9 @@ export class FileStorage {
       try {
         await fs.readFile(ADMIN_FILE, 'utf8');
         console.log('기존 관리자 계정 파일을 확인했습니다.');
-      } catch (error) {
+      } catch (error) 
+      
+      {
         console.log('관리자 계정 파일을 생성합니다.');
         const adminPassword = "$2b$10$q3bhJ2mYP.QNmRWoSTK4iuc8o9SOaVl88Er05yxLoinFJXh0AC6CG";
         const readyPassword = "$2b$10$CXWJj40kN/fZYmndOxo/oebQX2yDp1O.9dzRasBH64d1FHvmqU8F.";
