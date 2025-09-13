@@ -305,13 +305,30 @@ export default function Admin() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      // 서버 세션 무효화
+      await apiRequest("POST", "/api/admin/logout");
+    } catch (error) {
+      // 로그아웃 API 오류는 무시 (클라이언트 로그아웃은 계속 진행)
+      console.log('서버 세션 무효화 오류:', error);
+    }
+    
+    // 클라이언트 상태 초기화
     setIsLoggedIn(false);
     setCurrentUsername("");
     setUsername("");
     setPassword("");
     setLoginError("");
     localStorage.removeItem('adminUsername');
+    
+    // 쿼리 캐시 초기화
+    queryClient.clear();
+    
+    toast({
+      title: "로그아웃 완료",
+      description: "성공적으로 로그아웃되었습니다.",
+    });
   };
 
   const handleChangePassword = (e: React.FormEvent) => {
@@ -662,6 +679,16 @@ export default function Admin() {
                   </form>
                 </DialogContent>
               </Dialog>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLogout}
+                data-testid="button-logout"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                로그아웃
+              </Button>
               
             </div>
           </div>
