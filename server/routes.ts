@@ -477,10 +477,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/admin/urls", requireAuth, async (req, res) => {
     try {
       const { url } = req.body;
-      
+      /*
       if (!url) {
         return res.status(400).json({ message: "URL is required" });
       }
+      */
 
       const removed = await pgStorage.removeUrl(url);
       

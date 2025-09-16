@@ -839,6 +839,15 @@ export default function Admin() {
                             <Save className="w-4 h-4 mr-1" />
                             {updateUrlMutation?.isPending ? "저장 중..." : "저장"}
                           </Button>
+                          <Button 
+                            variant="destructive" 
+                            size="sm" 
+                            onClick={() => handleRemoveUrl(link.url)}
+                            disabled={removeUrlMutation?.isPending}
+                          >
+                            <Trash2 className="w-4 h-4 mr-1" />
+                            {removeUrlMutation?.isPending ? "삭제 중..." : "삭제"}
+                          </Button>
                           <Button variant="outline" size="sm" onClick={handleCancelEdit}>
                             <X className="w-4 h-4 mr-1" />취소
                           </Button>
