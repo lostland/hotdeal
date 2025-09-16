@@ -244,14 +244,20 @@ export async function fetchMetadata(url: string) {
 
     if (url.includes('link.coupang') )
     {
-      console.log("try playwright method");
+      finalUrl = await unshortenWithCurl(url);
 
-      const browser = await chromium.launch();
-      const page = await browser.newPage({ userAgent: KAKAO_HEADERS["User-Agent"] });
-      await page.setExtraHTTPHeaders(KAKAO_HEADERS);
-      await page.goto(url, { waitUntil: "domcontentloaded", timeout: 15000 });
-      finalUrl = page.url();
-      await browser.close();
+      if( finalUrl == url )
+        {
+          //console.log("try another method");
+
+          finalUrl = await unshorten(url);
+
+          if( finalUrl == url )
+          {
+            console.log("try Kakao method");
+            finalUrl = await unshortenKakao(url);
+          }
+        }
     }
     if (url.includes('link.') || url.includes('click.kakao') || url.includes('ozip.me') || url.includes('s.lotte')) 
     {
