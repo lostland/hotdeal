@@ -3,6 +3,8 @@ import * as cheerio from "cheerio";
 //import fetch from "node-fetch"; // Node<18이면 사용
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { chromium } from "playwright";
+
 const execFileAsync = promisify(execFile);
 
 export async function unshortenWithCurl(url: string) {
@@ -130,6 +132,24 @@ export async function unshortenKakao(inputUrl, { maxHops = 6, timeoutMs = 10000 
   }
 }
 
+async function quickUnshorten(url) 
+{
+  const res = await fetch(url, {
+    method: "GET",
+    redirect: "manual",
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 " +
+        "Chrome/123.0.0.0 Mobile Safari/537.36 KAKAOTALK 10.3.5",
+      "Referer": "https://talk.kakao.com/",
+    },
+  });
+
+  if (res.status >= 300 && res.status < 400) {
+    return new URL(res.headers.get("location"), url).href;
+  }
+  return res.url; // fallback
+}
 
 async function unshorten(url, { timeoutMs = 8000, maxHops = 5 } = {}) {
   const controller = new AbortController();
@@ -254,13 +274,13 @@ export async function fetchMetadata(url: string) {
 
         if( finalUrl == url )
         {
-          const { chromium } = await import("playwright");
+          console.log("try playwright method");
+          
           const browser = await chromium.launch();
           const page = await browser.newPage({ userAgent: KAKAO_HEADERS["User-Agent"] });
           await page.setExtraHTTPHeaders(KAKAO_HEADERS);
           await page.goto(url, { waitUntil: "domcontentloaded", timeout: 15000 });
           finalUrl = page.url();
-          console.log(finalUrl);
           await browser.close();
         }
         
