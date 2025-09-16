@@ -241,53 +241,88 @@ export async function fetchMetadata(url: string) {
     console.log(`----------------------------------------------------------`);
     
     // For redirect links, try to get the actual product URL first
-    if (url.includes('link.') || url.includes('click.kakao') || url.includes('ozip.me') ) {
-      console.log('리디렉트 링크 감지, 실제 URL 가져오기 시도...');
 
-      const res = await fetch(url, {
-        method: "GET",
-        redirect: "manual",                 // 직접 Location 읽기 (서버사이드 OK)
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-            "(KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
-          "Accept": "*/*",
-          "Accept-Language": "ko-KR,ko;q=0.9",
-          "Referer": "https://www.google.com/",   // 일부 단축링크가 좋아함
-        },
-        // timeout은 AbortController로 아래에서 설정
-      })
+    if (url.includes('link.coupang') )
+    {
+      console.log("try playwright method");
 
-      console.log("redirected:", res.redirected, "final?", res.url);
+      const browser = await chromium.launch();
+      const page = await browser.newPage({ userAgent: KAKAO_HEADERS["User-Agent"] });
+      await page.setExtraHTTPHeaders(KAKAO_HEADERS);
+      await page.goto(url, { waitUntil: "domcontentloaded", timeout: 15000 });
+      finalUrl = page.url();
+      await browser.close();
+    }
+    if (url.includes('link.') || url.includes('click.kakao') || url.includes('ozip.me') || url.includes('s.lotte')) 
+    {
+      console.log('리디렉트 링크 감지', url );
 
-      if( !res.redirected )
+      //console.log("try curl");
+
+      finalUrl = await unshortenWithCurl(url);
+
+      if( finalUrl == url )
       {
-        console.log("try another method");
-
-        finalUrl = await unshorten(url);
-
-        if( finalUrl == url )
-        {
-          console.log("try Kakao method");
-          finalUrl = await unshortenKakao(url);
-        }
-
-        if( finalUrl == url )
-        {
-          console.log("try playwright method");
-          
-          const browser = await chromium.launch();
-          const page = await browser.newPage({ userAgent: KAKAO_HEADERS["User-Agent"] });
-          await page.setExtraHTTPHeaders(KAKAO_HEADERS);
-          await page.goto(url, { waitUntil: "domcontentloaded", timeout: 15000 });
-          finalUrl = page.url();
-          await browser.close();
-        }
+        console.log("try quick method");
         
-      }
-      else
-      {
-        finalUrl = res.url;
+        const res = await fetch(url, {
+          method: "GET",
+          redirect: "manual",                 // 직접 Location 읽기 (서버사이드 OK)
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+              "(KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+            "Accept": "*/*",
+            "Accept-Language": "ko-KR,ko;q=0.9",
+            "Referer": "https://www.google.com/",   // 일부 단축링크가 좋아함
+          },
+          // timeout은 AbortController로 아래에서 설정
+        })
+  
+        console.log("redirected:", res.redirected, "final?", res.url);
+  
+        if( res.ok )
+        {
+          const html = await res.text();
+          const $ = cheerio.load(html);
+          let url2 = $('meta[property="og:url"]').attr('content') ;
+          if( url2 )
+          {
+            finalUrl = url2;
+            console.log(`og:url로 최종 URL 변경: ${finalUrl}`);
+          }
+  
+        }
+  
+        if( finalUrl == url )
+        {
+          //console.log("try another method");
+          
+          finalUrl = await unshorten(url);
+  
+          if( finalUrl == url )
+          {
+            console.log("try Kakao method");
+            finalUrl = await unshortenKakao(url);
+          }
+  
+          if( finalUrl == url )
+          {
+            console.log("try playwright method");
+            
+            const browser = await chromium.launch();
+            const page = await browser.newPage({ userAgent: KAKAO_HEADERS["User-Agent"] });
+            await page.setExtraHTTPHeaders(KAKAO_HEADERS);
+            await page.goto(url, { waitUntil: "domcontentloaded", timeout: 15000 });
+            finalUrl = page.url();
+            await browser.close();
+          }
+          
+        }
+        else
+        {
+          finalUrl = res.url;
+        }
       }
       
       // 교차 출처 + CORS 미허용이면 res.url이 신뢰 안 될 수 있음
@@ -609,6 +644,7 @@ export async function fetchMetadata(url: string) {
     if (image && !image.startsWith('http')) {
       try {
         image = new URL(image, finalUrl).href;
+        console.log(`image : ${image}`);
       } catch {
         image = null;
       }

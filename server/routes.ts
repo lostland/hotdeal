@@ -416,11 +416,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/admin/urls", requireAuth, async (req, res) => {
     try {
       const { oldUrl, newUrl, title, note, customImage } = req.body;
-      
+
+      /*
       // oldUrl과 newUrl 모두 필수 검증
       if (!oldUrl || !newUrl) {
         return res.status(400).json({ message: "Old URL and new URL are required" });
       }
+      */
 
       // 이미지 URL이 있으면 그대로 사용 (로컬 파일 경로)
       let normalizedImage = customImage;
