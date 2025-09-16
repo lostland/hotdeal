@@ -164,6 +164,21 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, sh
     },
   });
 
+  // URL 삭제 뮤테이션
+  const deleteLinkMutation = useMutation({
+    mutationFn: async (url: string) => {
+      return apiRequest('DELETE', '/api/admin/urls', { url });
+    },
+    onSuccess: () => {
+      toast({ title: '성공', description: '링크가 삭제되었습니다.' });
+      queryClient.invalidateQueries({ queryKey: ['/api/links'] });
+      setShowEditModal(false);
+    },
+    onError: (error: any) => {
+      toast({ title: '오류', description: error.message || '링크 삭제에 실패했습니다.', variant: 'destructive' });
+    },
+  });
+
   const handleSaveEdit = () => {
     updateLinkMutation.mutate({
       oldUrl: link.url,
@@ -180,6 +195,12 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, sh
     setEditNote(link.note || '');
     setEditCustomImage(link.customImage || '');
     setShowEditModal(false);
+  };
+
+  const handleDeleteLink = () => {
+    if (confirm('이 링크를 삭제하시겠습니까?')) {
+      deleteLinkMutation.mutate(link.url);
+    }
   };
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -445,6 +466,14 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, sh
                 className="flex-1"
               >
                 {updateLinkMutation.isPending ? '저장 중...' : '저장'}
+              </Button>
+              <Button 
+                onClick={handleDeleteLink} 
+                variant="destructive"
+                disabled={deleteLinkMutation.isPending}
+                className="flex-1"
+              >
+                {deleteLinkMutation.isPending ? '삭제 중...' : '삭제'}
               </Button>
               <Button 
                 onClick={handleCancelEdit} 
