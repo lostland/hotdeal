@@ -244,7 +244,46 @@ export async function fetchMetadata(url: string) {
 
     if (url.includes('link.coupang') )
     {
-      finalUrl = await unshortenWithCurl(url);
+      const res = await fetch(url, {
+        method: "GET",
+        redirect: "manual",                 // 직접 Location 읽기 (서버사이드 OK)
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+            "(KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+          "Accept": "*/*",
+          "Accept-Language": "ko-KR,ko;q=0.9",
+          "Referer": "https://www.google.com/",   // 일부 단축링크가 좋아함
+        },
+        // timeout은 AbortController로 아래에서 설정
+      })
+
+      console.log("redirected:", res.redirected, "final?", res.url);
+
+
+      if( res.ok )
+      {
+        finalUrl = res.url;
+
+        if( finalUrl == url )
+        {
+          const html = await res.text();
+          const $ = cheerio.load(html);
+          let url2 = $('meta[property="og:url"]').attr('content') ;
+          if( url2 )
+          {
+            finalUrl = url2;
+            console.log(`og:url로 최종 URL 변경: ${finalUrl}`);
+          }
+        }
+      }
+      
+      if( finalUrl == url )
+      {
+        console.log("try curl");
+
+        finalUrl = await unshortenWithCurl(url);
+      }
 
       if( finalUrl == url )
         {
