@@ -18,6 +18,195 @@ export async function unshortenWithCurl(url: string) {
   return stdout.trim();
 }
 
+import * as cheerio from "cheerio";
+
+const KAKAO_HEADERS = {
+  "User-Agent":
+    // 카톡 WebView에 가까운 모바일 UA (안드/크롬 버전은 아무거나 최신대 충분)
+    "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) " +
+    "Chrome/123.0.0.0 Mobile Safari/537.36 KAKAOTALK 10.3.5",
+  "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+  "Accept-Language": "ko-KR,ko;q=0.9",
+  "Upgrade-Insecure-Requests": "1",
+  "Sec-Fetch-Site": "cross-site",
+  "Sec-Fetch-Mode": "navigate",
+  "Sec-Fetch-Dest": "document",
+  // 카톡 유입처럼 보이게
+  "Referer": "https://talk.kakao.com/",
+  // 일부 서버가 압축 응답만 주는 경우 대비
+  "Accept-Encoding": "gzip, deflate, br",
+  "Connection": "keep-alive",
+};
+
+async function fetchOnce(url, { signal } = {}) 
+{
+  const res = await fetch(url, {
+    method: "GET",
+    redirect: "manual",
+    headers: KAKAO_HEADERS,
+    signal,
+  });
+  const status = res.status;
+  const loc = res.headers.get("location");
+  const contentType = res.headers.get("content-type") || "";
+  const urlAfter = res.url; // manual이라 의미 제한적
+  const text = contentType.includes("text/html") ? await res.text() : "";
+
+  return { status, loc, urlAfter, text, contentType };
+}
+
+function resolveRelative(base, next) 
+{
+  try { return new URL(next, base).href; }
+  catch { return next; }
+}
+
+function extractFromHtml(html, baseUrl) 
+{
+  // 1) meta refresh
+  const meta = html.match(
+    /<meta[^>]+http-equiv=["']refresh["'][^>]*content=["'][^"']*url=([^"'>]+)["']/i
+  );
+  if (meta) return resolveRelative(baseUrl, meta[1]);
+
+  // 2) JS redirect (대표 패턴들)
+  const js =
+    html.match(/(?:location\.replace|location\.href|window\.location\s*=\s*|window\.location\.href\s*=)\s*["']([^"']+)["']/i);
+  if (js) return resolveRelative(baseUrl, js[1]);
+
+  // 3) data-redirect / data-url 류 커스텀 속성
+  const dataAttr = html.match(/data-(?:redirect|url)=["']([^"']+)["']/i);
+  if (dataAttr) return resolveRelative(baseUrl, dataAttr[1]);
+
+  // 4) og:url 힌트
+  const $ = cheerio.load(html);
+  const og = $('meta[property="og:url"]').attr("content");
+  if (og) return resolveRelative(baseUrl, og);
+
+  return null;
+}
+
+export async function unshortenKakao(inputUrl, { maxHops = 6, timeoutMs = 10000 } = {}) 
+{
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    let current = inputUrl;
+    for (let hop = 0; hop < maxHops; hop++) {
+      const { status, loc, text, contentType } = await fetchOnce(current, { signal: controller.signal });
+
+      // 3xx → Location 헤더 우선
+      if (status >= 300 && status < 400) {
+        if (!loc) 
+        {
+          console.log("Location 없음, 현재 URL 반환");
+          return current; // Location 없으면 여기까지
+        }
+        console.log("3xx 리다이렉트:", loc);
+        current = resolveRelative(current, loc);
+        continue;
+      }
+
+      // 200/204 등 → HTML 내부에서 단서 추출
+      if (contentType.includes("text/html")) {
+        console.log("HTML 응답, 내부 단서 추출 시도");
+        const hinted = extractFromHtml(text, current);
+        
+        if (hinted) {
+          console.log("단서 발견:", hinted);
+          current = hinted;
+          // hinted가 또 단축링크일 수 있으니 루프 계속
+          continue;
+        }
+      }
+
+      console.log("단서 없음, 현재 URL 반환")
+      // 더 이상 단서 없음 → 현재 URL이 최종
+      return current;
+    }
+    return current;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+
+async function unshorten(url, { timeoutMs = 8000, maxHops = 5 } = {}) {
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    let current = url;
+    for (let hop = 0; hop < maxHops; hop++) {
+      console.log(`unshorten: ${hop + 1}/${maxHops} ${current}`)
+      
+      const res = await fetch(current, {
+        method: "GET", // 필요시 "HEAD"로 먼저 시도해도 OK
+        redirect: "manual",             // 수동처리
+        signal: controller.signal,
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+            "(KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "ko-KR,ko;q=0.9",
+          "Referer": "https://www.google.com/",
+          "Accept-Encoding": "gzip, deflate, br",
+          "Connection": "keep-alive",
+        },
+      });
+
+      // 1) 표준 3xx 리다이렉트 처리
+      if (res.status >= 300 && res.status < 400) {
+        const loc = res.headers.get("location");
+        if (!loc) break; // Location 없으면 종료
+        const next = new URL(loc, current).href; // 상대경로 대비
+        current = next;
+        continue; // 다음 hop
+      }
+
+      // 2) 200이면 HTML 안에서 meta refresh/JS/OG 태그로 추론
+      const html = await res.text();
+
+      // 2-a) meta refresh
+      const metaRefreshMatch = html.match(
+        /<meta[^>]+http-equiv=["']refresh["'][^>]*content=["'][^"']*url=([^"'>]+)["']/i
+      );
+      
+      if (metaRefreshMatch) {
+        current = new URL(metaRefreshMatch[1], current).href;
+        console.log("metaRefresh:", current);
+        continue;
+      }
+
+      // 2-b) JS 기반 리다이렉트 (window.location / location.href / replace 등)
+      const jsMatch =
+        html.match(/(?:location\.replace|location\.href|window\.location\s*=\s*|window\.location\.href\s*=)\s*["']([^"']+)["']/i) ||
+        html.match(/content="0;url=([^"]+)"/i);
+      if (jsMatch) {
+        current = new URL(jsMatch[1], current).href;
+        console.log("jsRedirect:", current);
+        continue;
+      }
+
+      // 2-c) og:url 힌트 (완전한 보장은 없지만 종종 최종 랜딩에 가까움)
+      const $ = cheerio.load(html);
+      const og = $('meta[property="og:url"]').attr("content");
+      if (og) 
+      {
+        console.log("og:", og);
+        return og;
+      }
+      
+      // 더 이상 단서가 없으면 여기까지의 URL을 반환
+      return current;
+    }
+    return current;
+  } finally {
+    clearTimeout(t);
+  }
+}
+
 
 export async function fetchMetadata(url: string) {
   try {
@@ -53,22 +242,28 @@ export async function fetchMetadata(url: string) {
 
       if( !res.redirected )
       {
-        console.log("try curl");
+        console.log("try another method");
 
-        finalUrl = await unshortenWithCurl(url);
+        finalUrl = await unshorten(url);
 
-        if( res.ok )
+        if( finalUrl == url )
         {
-          const html = await res.text();
-          const $ = cheerio.load(html);
-          let url2 = $('meta[property="og:url"]').attr('content') ;
-          if( url2 )
-          {
-            finalUrl = url2;
-            console.log(`og:url로 최종 URL 변경: ${finalUrl}`);
-          }
-          
+          console.log("try Kakao method");
+          finalUrl = await unshortenKakao(url);
         }
+
+        if( finalUrl == url )
+        {
+          const { chromium } = await import("playwright");
+          const browser = await chromium.launch();
+          const page = await browser.newPage({ userAgent: KAKAO_HEADERS["User-Agent"] });
+          await page.setExtraHTTPHeaders(KAKAO_HEADERS);
+          await page.goto(url, { waitUntil: "domcontentloaded", timeout: 15000 });
+          finalUrl = page.url();
+          console.log(finalUrl);
+          await browser.close();
+        }
+        
       }
       else
       {
