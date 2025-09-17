@@ -163,10 +163,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Link not found" });
       }
 
+      
       // 새로운 메타데이터 가져오기
       const metadata = await queueMetadataRequest(link.url);
       
       // 링크 업데이트
+      
       await pgStorage.updateLinkMetadata(linkId, metadata);
       
       res.json({ success: true, metadata });
@@ -190,6 +192,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Fetch fresh metadata to get current price (순차 처리)
       const metadata = await queueMetadataRequest(link.url);
+      
+      // 파싱한 메타데이터를 데이터베이스에 저장
+      await pgStorage.updateLinkMetadata(linkId, metadata);
       
       res.json({ 
         price: metadata.price,

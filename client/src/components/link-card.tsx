@@ -33,6 +33,8 @@ export function LinkCard({ link, onClick, onDelete, hideDeleteButton = false, sh
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const { toast } = useToast();
 
+  console.log(`LinkCard: ${link.url}, title: ${link.title}`)
+  
   // Check if note exists (non-empty, trimmed)
   const hasNote = !!link.note?.trim();
   
