@@ -298,7 +298,7 @@ export async function fetchMetadata(url: string) {
           }
         }
     }
-    if (url.includes('link.') || url.includes('click.kakao') || url.includes('ozip.me') || url.includes('s.lotte')|| url.includes('kko.')) 
+    if (url.includes('link.') || url.includes('click.kakao') || url.includes('clink.kakao') ||  url.includes('ozip.me') || url.includes('s.lotte')|| url.includes('kko.')) 
     {
       console.log('리디렉트 링크 감지', url );
 
